@@ -1,0 +1,8 @@
+# Test credentials and temporary files
+test_*.py
+*.pyc
+__pycache__/
+*.log
+
+# Environment files (should be in project root)
+.env
