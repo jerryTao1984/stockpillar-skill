@@ -6,7 +6,7 @@ Use this reference with `../SKILL.md` when the user asks about AI supply-chain g
 
 Follow this shortcut before reading endpoint details:
 
-- "AI 供应链五层图谱 / 图谱结构 / 有哪些层" -> `GET /themes/{theme_code}/supply-chain/graph`.
+- "AI 供应链六层图谱 / 图谱结构 / 有哪些层" -> `GET /themes/{theme_code}/supply-chain/graph`.
 - "某一层/某个环节影响哪些公司" -> `GET /themes/{theme_code}/supply-chain/exposures`.
 - "今天/某天 AI 供应链影响了哪些公司/股票" -> `GET /themes/{theme_code}/supply-chain/impacts`.
 - "某条事件如何传导到公司/股票" -> `GET /events/{event_id}/supply-chain-impact`.
@@ -64,7 +64,7 @@ Current first theme for the AI supply-chain graph is `AI_EMBODIED`.
 
 ## Important Fields
 
-- Graph `layers` describe the five-layer structure. Use `layer_index`, `name`, and `description` to explain the hierarchy.
+- Graph `layers` describe the six-layer structure. L0 is `power_infra` / 电力与能源底座, the upstream source layer for AI data-center power demand. Use `layer_index`, `name`, and `description` to explain the hierarchy.
 - Graph `nodes` include conceptual nodes, product/technology nodes, and company nodes. Company nodes may be global, not A-share-only.
 - Graph `edges` are reviewed supply-chain relations such as `supplier_to`, `customer_of`, `product_of`, `component_of`, `depends_on`, `benefits_from`, `risk_from`, `competitor_of`, `substitute_for`, and `technology_support`.
 - Graph `exposure_edges` are derived or reviewed "segment/product/technology -> company" impact edges. Use these when translating a layer or concept into impacted companies.

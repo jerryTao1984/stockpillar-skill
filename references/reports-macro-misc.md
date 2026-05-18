@@ -203,7 +203,7 @@ curl "$STOCKPILLAR_API_URL/moneyflow/hsgt?start_date=20260407&end_date=20260416"
 ### HSGT Overview
 
 ```bash
-curl "$STOCKPILLAR_API_URL/moneyflow/hsgt/overview?trade_date=20260417&days=5" \
+curl "$STOCKPILLAR_API_URL/moneyflow/hsgt/overview?trade_date=20260417" \
   -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
 ```
 

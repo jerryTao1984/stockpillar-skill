@@ -10,6 +10,13 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /positions/trades`: Auth `Bearer token`; required params `none`; use for historical buy or sell execution review.
 - `GET /positions/summary`: Auth `Bearer token`; required params `none`; use for portfolio-level PnL and cost summary.
 - `POST /positions/refresh`: Auth `Bearer token`; required params `none`; use to force an on-demand holding refresh.
+- `GET /watchlist`: Auth `Bearer token`; required params `none`; use for the token owner's watchlist.
+- `POST /watchlist/{ts_code}`: Auth `Bearer token`; required params path `ts_code`; use to add a stock to the token owner's watchlist.
+- `DELETE /watchlist/{ts_code}`: Auth `Bearer token`; required params path `ts_code`; use to remove a stock from the token owner's watchlist.
+- `GET /search`: Auth `Bearer token`; required params `q`; use for lightweight stock search by code or name.
+- `GET /stocks`: Auth `Bearer token`; required params `none`; use for the stock pool list with keyword, board, watchlist, industry, tier, theme, and date filters. Response uses `data.records`.
+- `GET /stocks/summary`: Auth `Bearer token`; required params `none`; use for stock pool up/down and limit-up/limit-down summary under the same filters.
+- `GET /stocks/filters`: Auth `Bearer token`; required params `none`; use for stock pool filter options such as industries, tiers, and themes.
 - `GET /stocks/{ts_code}`: Auth `Bearer token`; required params path `ts_code`; use for single-stock basic info with derived `tier`.
 - `GET /stocks/batch`: Auth `Bearer token`; required params `ts_codes`; use for batch basic info lookup.
 - `GET /stocks/{ts_code}/prices/kline`: Auth `Bearer token`; required params path `ts_code`, `start_date`, `end_date`; use for a single-stock K-line window.
@@ -26,8 +33,19 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /stocks/{ts_code}/technical/cyq-chips`: Auth `Bearer token`; required params path `ts_code`; use for daily chip distribution price buckets.
 - `GET /stocks/{ts_code}/events/limit-list`: Auth `Bearer token`; required params path `ts_code`; use for limit-up or limit-down board list records.
 - `GET /stocks/{ts_code}/events/surveys`: Auth `Bearer token`; required params path `ts_code`; use for investor-relation and institution survey records.
+- `GET /stocks/{ts_code}/events/holder-trades`: Auth `Bearer token`; required params path `ts_code`; use for shareholder increase or decrease records keyed by `ann_date`.
+- `GET /stocks/{ts_code}/events/block-trades`: Auth `Bearer token`; required params path `ts_code`; use for stock-level block trade records keyed by `trade_date`.
+- `GET /stocks/{ts_code}/events/repurchases`: Auth `Bearer token`; required params path `ts_code`; use for repurchase plan and execution progress records keyed by `ann_date`.
 - `GET /stocks/{ts_code}/flows/slb-sec-detail`: Auth `Bearer token`; required params path `ts_code`; use for securities lending detail records.
 - `GET /concepts/{ts_code}/moneyflow/ths`: Auth `Bearer token`; required params path `ts_code`; use for THS concept moneyflow records.
+- `GET /stocks/{ts_code}/ownership/holder-numbers`: Auth `Bearer token`; required params path `ts_code`; use for shareholder-count history keyed by `ann_date` and `end_date`.
+- `GET /stocks/{ts_code}/ownership/top10-holders`: Auth `Bearer token`; required params path `ts_code`; use for top10 holder rows keyed by `ann_date`.
+- `GET /stocks/{ts_code}/ownership/top10-floatholders`: Auth `Bearer token`; required params path `ts_code`; use for top10 float-holder rows keyed by `ann_date`.
+- `GET /stocks/{ts_code}/ownership/overview`: Auth `Bearer token`; required params path `ts_code`; use for an ownership, pledge, repurchase, and block-trade overview in one call.
+- `GET /stocks/{ts_code}/capital-overview`: Auth `Bearer token`; required params path `ts_code`; use for a one-call capital and trading overview across moneyflow, margin, HSGT, lending, and toplist context.
+- `GET /stocks/{ts_code}/governance-overview`: Auth `Bearer token`; required params path `ts_code`; use for a one-call governance and regulatory overview across surveys, shareholder actions, pledges, unlocks, and related references.
+- `GET /stocks/{ts_code}/pledges/detail`: Auth `Bearer token`; required params path `ts_code`; use for pledge detail rows keyed by `ann_date`.
+- `GET /stocks/{ts_code}/pledges/stat`: Auth `Bearer token`; required params path `ts_code`; use for pledge summary rows keyed by `end_date`.
 - `GET /technical/radar`: Auth `Bearer token`; required params `none`; use for a market-wide technical scan.
 - `GET /stocks/{ts_code}/moneyflow`: Auth `Bearer token`; required params path `ts_code`, `start_date`, `end_date`; optional params `page`, `size`; use for single-stock moneyflow history.
 - `GET /moneyflow/hsgt`: Auth `Bearer token`; required params `start_date`, `end_date`; use for a multi-day northbound or southbound flow window.
@@ -39,6 +57,9 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /stocks/{ts_code}/financial`: Auth `Bearer token`; required params path `ts_code`; use for a compact financial metrics snapshot.
 - `GET /toplist`: Auth `Bearer token`; required params `none`; use for a market-wide toplist snapshot or one-day list.
 - `GET /stocks/{ts_code}/toplist`: Auth `Bearer token`; required params path `ts_code`; use for one stock's toplist records.
+- `GET /stocks/{ts_code}/top-list-seat-chain`: Auth `Bearer token`; required params path `ts_code`; use for one stock's toplist seat-chain analysis.
+- `GET /stocks/{ts_code}/top-list-hot-money`: Auth `Bearer token`; required params path `ts_code`, query `trade_date`, `operate_dept_name`; use to find same-day hot-money candidates linked to a specific operating department.
+- `GET /stocks/{ts_code}/top-list-hot-money-buyers`: Auth `Bearer token`; required params path `ts_code`; use for buyer-seat and hot-money clues for a stock.
 - `GET /top20/daily`: Auth `Bearer token`; required params `trade_date` or `previous_trade_date=true`; use for a daily score or prediction Top20 snapshot.
 - `GET /industries/mappings`: Auth `Bearer token`; required params `none`; use for the industry-to-tier and agent routing map.
 - `GET /industries/status`: Auth `Bearer token`; required params `none`; use for industry pipeline freshness and counts.
@@ -64,6 +85,8 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /stocks/{ts_code}/supply-chain`: Auth `Bearer token`; required params path `ts_code`; use for a stock/company's supply-chain position and upstream/downstream relations.
 - `GET /events/outcomes`: Auth `Bearer token`; required params `none`; use for事件后验市场表现 and score calibration evidence.
 - `GET /events/{event_id}/supply-chain-impact`: Auth `Bearer token`; required params path `event_id`; use for persisted supply-chain impact propagation results from one event to companies/securities. Prefer `impact_on_a_shares` for A-share output. Security resolution can include direct company hits, direct segment exposures, and related same-chain segment exposures.
+- `GET /risk-events/market`: Auth `Bearer token`; required params `none`; use for a paged market risk event list with optional date, risk level, and risk domain filters.
+- `GET /risk-events/stocks`: Auth `Bearer token`; required params `none`; use for a paged stock risk event list with optional date, stock, risk level, and risk category filters.
 - `GET /macro`: Auth `Bearer token`; required params `start_date`, `end_date`; use for a date-ranged macro dataset.
 - `POST /screen/stocks`: Auth `Bearer token`; required params JSON `filters`; use for structured stock screening and ranking.
 - `GET /market/summary`: Auth `Bearer token`; required params `none`; use for an agent-friendly daily market state payload with subscores, risk flags, and guidance.
@@ -71,6 +94,8 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /market/summary/v2`: Auth `Bearer token`; required params `none`; use for the same v2 daily market state payload exposed through the explicit versioned path.
 - `GET /market/sentiment_pulse/v2`: Auth `Bearer token`; required params `none`; use for the same v2 intraday market state payload exposed through the explicit versioned path.
 - `POST /stocks/{ts_code}/analysis/report`: Auth `Bearer token`; required params path `ts_code`; use to generate an AI valuation report and shareable HTML.
+- `GET /valuation`: Auth `Bearer token`; required params `none`; use for the valuation report list with optional `industry`, `tab`, `page`, and `limit`. Response uses `data.records`.
+- `GET /valuation/{ts_code}`: Auth `Bearer token`; required params path `ts_code`; use for a single stock's latest valuation report detail.
 - `GET /stocks/{ts_code}/balancesheet`: Auth `Bearer token`; required params path `ts_code`; use for raw balance-sheet statement rows.
 - `GET /stocks/{ts_code}/cashflow`: Auth `Bearer token`; required params path `ts_code`; use for raw cash-flow statement rows.
 - `GET /stocks/{ts_code}/income`: Auth `Bearer token`; required params path `ts_code`; use for raw income-statement rows.
@@ -99,6 +124,13 @@ Use these rules before reading endpoint-specific details:
 - One-stock money movement -> `GET /stocks/{ts_code}/moneyflow`.
 - Northbound/southbound aggregate money movement -> `GET /moneyflow/hsgt` or `/moneyflow/hsgt/overview`.
 - Stock-level HSGT ownership or holding ratio -> `GET /stocks/{ts_code}/flows/hk-hold`.
+- Shareholder increase or decrease events -> `GET /stocks/{ts_code}/events/holder-trades`.
+- Stock-level block trades and counterparties -> `GET /stocks/{ts_code}/events/block-trades`.
+- Repurchase plan or execution progress -> `GET /stocks/{ts_code}/events/repurchases`.
+- Shareholder-count trend or ownership breadth -> `GET /stocks/{ts_code}/ownership/holder-numbers`.
+- Top10 holder structure -> `GET /stocks/{ts_code}/ownership/top10-holders` or `/stocks/{ts_code}/ownership/top10-floatholders`.
+- Pledge detail or pledge summary -> `GET /stocks/{ts_code}/pledges/detail` or `/stocks/{ts_code}/pledges/stat`.
+- One-call ownership, pledge, and repurchase overview -> `GET /stocks/{ts_code}/ownership/overview`.
 - Daily market state -> `GET /market/summary` or `/market/summary/v2`.
 - Intraday market mood -> `GET /market/sentiment_pulse` or `/market/sentiment_pulse/v2`.
 - Supply-chain layer or graph structure -> `GET /themes/{theme_code}/supply-chain/graph`.
