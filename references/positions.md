@@ -159,3 +159,33 @@ These pagination fields are inside `data`, not top-level response keys.
 - If the user asks for buy/sell history, prefer `GET /positions/trades`.
 - If the user asks to refresh PnL, call `POST /positions/refresh`.
 - When explaining PnL, mention `last_close` or `cost_fallback` if they appear, so the user does not mistake fallback pricing for realtime pricing.
+
+## `/watchlist/*` Guide (自选股 / 关注列表)
+
+A watchlist is the user-curated stock pool — lighter than `/positions/*` and never carries cost/PnL.
+The token-owner's `user_id` is resolved from the bearer token; never pass `user_id` as a parameter.
+
+### Endpoints
+
+- `GET /watchlist`: list current watchlist stocks for the token owner. Returns rows with `ts_code`, `stock_name`, plus light decoration (industry, latest price snapshot if available).
+- `POST /watchlist/{ts_code}`: add one stock to the watchlist. Idempotent — re-adding is a no-op.
+- `DELETE /watchlist/{ts_code}`: remove one stock from the watchlist.
+
+### Trigger Phrases
+
+- 我的自选股 / 我关注的股票 / 关注列表 → `GET /watchlist`
+- 把 X 加到自选 / 加入观察池 → `POST /watchlist/{ts_code}`
+- 把 X 从自选移除 / 不再关注 → `DELETE /watchlist/{ts_code}`
+
+### Mutation Safety
+
+- Unlike trade endpoints, watchlist writes do **not** require the explicit
+  stock/quantity/price confirmation flow — the user's intent is captured by the stock code alone.
+  Confirm only when the user's wording is genuinely ambiguous about which stock they mean.
+- Never delete the entire watchlist in a loop. If the user says "清空自选", confirm count and ask
+  again before iterating.
+
+### Distinction From Positions
+
+- `/positions/*`: real or simulated holdings with cost basis, qty, PnL.
+- `/watchlist/*`: zero-quantity watch entries. Use this when the user only wants to track price/news without modeling P&L.

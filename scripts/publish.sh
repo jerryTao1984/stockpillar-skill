@@ -4,13 +4,20 @@
 # at ~/stockpillar-skill-pub, then commit and push.
 #
 # Usage:
-#   ./publish.sh "Release notes for this sync"
+#   ./publish.sh "Release notes for this sync"          # publish
+#   ./publish.sh --dry-run "Release notes for this sync"  # preview only, no rsync, no commit
 #
 # Prerequisites:
 #   - ~/stockpillar-skill-pub already cloned from the public repo
 #   - git remote `origin` already pointing at jerryTao1984/stockpillar-skill
 
 set -euo pipefail
+
+DRY_RUN=0
+if [[ "${1:-}" == "--dry-run" ]]; then
+  DRY_RUN=1
+  shift
+fi
 
 MSG="${1:-Sync from monorepo}"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,15 +31,22 @@ fi
 
 echo "Source:      ${SRC}"
 echo "Destination: ${DST}"
+echo "Message:     ${MSG}"
+[[ ${DRY_RUN} -eq 1 ]] && echo "Mode:        DRY-RUN (no changes will be made)"
 
-rsync -av --delete \
+RSYNC_FLAGS=(-av --delete \
   --exclude='.git' \
   --exclude='__pycache__' \
-  --exclude='.DS_Store' \
-  --exclude='scripts/publish.sh' \
-  "${SRC}/" "${DST}/"
+  --exclude='.DS_Store')
+[[ ${DRY_RUN} -eq 1 ]] && RSYNC_FLAGS+=(--dry-run)
 
-cp "${SRC}/scripts/publish.sh" "${DST}/scripts/publish.sh" 2>/dev/null || true
+rsync "${RSYNC_FLAGS[@]}" "${SRC}/" "${DST}/"
+
+if [[ ${DRY_RUN} -eq 1 ]]; then
+  echo
+  echo "Dry-run complete. Re-run without --dry-run to apply."
+  exit 0
+fi
 
 cd "${DST}"
 if git diff --quiet && git diff --cached --quiet; then

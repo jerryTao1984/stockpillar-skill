@@ -6,7 +6,7 @@ Use this reference with `../SKILL.md` when the user asks about AI supply-chain g
 
 Follow this shortcut before reading endpoint details:
 
-- "AI 供应链六层图谱 / 图谱结构 / 有哪些层" -> `GET /themes/{theme_code}/supply-chain/graph`.
+- "AI 供应链五层图谱 / 图谱结构 / 有哪些层" -> `GET /themes/{theme_code}/supply-chain/graph`.
 - "某一层/某个环节影响哪些公司" -> `GET /themes/{theme_code}/supply-chain/exposures`.
 - "今天/某天 AI 供应链影响了哪些公司/股票" -> `GET /themes/{theme_code}/supply-chain/impacts`.
 - "某条事件如何传导到公司/股票" -> `GET /events/{event_id}/supply-chain-impact`.
@@ -64,7 +64,7 @@ Current first theme for the AI supply-chain graph is `AI_EMBODIED`.
 
 ## Important Fields
 
-- Graph `layers` describe the six-layer structure. L0 is `power_infra` / 电力与能源底座, the upstream source layer for AI data-center power demand. Use `layer_index`, `name`, and `description` to explain the hierarchy.
+- Graph `layers` describe the five-layer structure. Use `layer_index`, `name`, and `description` to explain the hierarchy.
 - Graph `nodes` include conceptual nodes, product/technology nodes, and company nodes. Company nodes may be global, not A-share-only.
 - Graph `edges` are reviewed supply-chain relations such as `supplier_to`, `customer_of`, `product_of`, `component_of`, `depends_on`, `benefits_from`, `risk_from`, `competitor_of`, `substitute_for`, and `technology_support`.
 - Graph `exposure_edges` are derived or reviewed "segment/product/technology -> company" impact edges. Use these when translating a layer or concept into impacted companies.
@@ -90,6 +90,16 @@ Current first theme for the AI supply-chain graph is `AI_EMBODIED`.
 - Treat confidence as evidence quality, not expected stock return.
 - If a company is global or unlisted, do not force it into an A-share code. Use stock mappings only when the API returns them.
 - For manual correction, direct the user to the supply-chain review page rather than calling mutation endpoints.
+- `segment_code` values referenced in supply-chain exposures (`AI_CHIP`, `OPTICAL_CPO`, `PCB`,
+  `MEMORY_ADV_PACKAGING`, `AIDC_POWER_COOLING`, `IDC_CLOUD`, `SEMI_BASE`, `AI_SOFTWARE`,
+  `AI_APPLICATION`, `AIGC_CONTENT`, `ROBOTICS_EMBODIED`, `EDGE_AI_IOT`, `DATA_TOOLCHAIN`,
+  `WEAK_CONCEPT`, `OTHER`) share the same canonical enum as `/themes/{theme_code}/stock-pool`.
+  When the user asks "光模块段在主题池里有哪些股", chain
+  `/supply-chain/exposures?chain_code=...&segment_node_id=...` (公司暴露) →
+  `/themes/{theme_code}/stock-pool?segment_code=OPTICAL_CPO` (committed pool 中的 A 股标的)
+  rather than re-mapping segment names yourself. See
+  [industries-events.md `/themes/{theme_code}/stock-pool` Guide](industries-events.md) for the
+  full enum and per-segment commitment level.
 
 ## Example Calls
 

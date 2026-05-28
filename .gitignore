@@ -1,5 +1,5 @@
 # Test credentials and temporary files
-/test_*.py
+test_*.py
 *.pyc
 __pycache__/
 *.log

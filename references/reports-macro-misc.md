@@ -203,7 +203,7 @@ curl "$STOCKPILLAR_API_URL/moneyflow/hsgt?start_date=20260407&end_date=20260416"
 ### HSGT Overview
 
 ```bash
-curl "$STOCKPILLAR_API_URL/moneyflow/hsgt/overview?trade_date=20260417" \
+curl "$STOCKPILLAR_API_URL/moneyflow/hsgt/overview?trade_date=20260417&days=5" \
   -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
 ```
 
@@ -251,3 +251,78 @@ Preferred answer style:
 - no long raw JSON dump unless the user asked for it
 
 If the user asks for deep analysis, combine facts with a short interpretation section. If they ask for raw data, stay literal.
+
+## `/valuation` and `/valuation/{ts_code}` Guide
+
+These read the **cached** AI valuation aggregate. They do **not** trigger regeneration.
+
+### Endpoint Choice
+
+- `GET /valuation`: list/leaderboard of recently generated valuation reports. Use when the user
+  asks for the valuation board, recent valuations, or to scan by industry/tab.
+- `GET /valuation/{ts_code}`: detail snapshot for one stock — the same payload that backs the
+  shared HTML report.
+- `POST /stocks/{ts_code}/analysis/report`: regenerate the report end-to-end (DCF/PE/DDM +
+  AI commentary + persisted HTML). Use this only when the user explicitly asks for a fresh report;
+  otherwise prefer the cached `GET /valuation/{ts_code}`.
+
+### Parameters
+
+- `/valuation`: optional `industry`, `tab` (default `all`; common values include `all`, `latest`,
+  `industry`, `tier`), `limit` (default 30), `page`. Returns `records`/`page`/`size`/`total`.
+- `/valuation/{ts_code}`: no required params besides path. Returns the full detail object that
+  may include DCF inputs, PE band, DDM result, AI commentary, and share URL.
+
+### Interpretation Rules
+
+- The list and detail are **cached** — if the user wants today's fresh valuation, ask whether to
+  regenerate (which incurs model cost) or accept the cached value.
+- Quote the report's `analysis_version` / `generated_at` so the user knows the snapshot vintage.
+- Do not invent fields. If a DCF field is missing in the response, say "未提供" rather than
+  reconstructing from other endpoints.
+
+## `/research-meetings/*` Guide (调研纪要 / 路演纪要)
+
+This subtree ingests external ASR/recording transcripts of analyst meetings, road shows, and
+expert calls, then promotes high-confidence findings into the event feed.
+
+### Read Endpoints
+
+- `GET /research-meetings`: list meetings newest-first. Optional `limit` (default 100).
+- `GET /research-meetings/{meeting_id}`: single meeting detail with latest AI analysis,
+  candidate events, and evidence transcript segments.
+- `GET /research-meetings/candidates`: candidate-event review queue across all meetings.
+  Optional `meeting_id` filter.
+- `GET /research-meetings/{meeting_id}/candidates`: candidates for one meeting. Optional
+  `review_status`, `limit` (default 200).
+
+### Mutation Endpoints — require explicit confirmation
+
+All of the following must be confirmed in the conversation before the skill calls them. The
+confirmation must clearly identify the meeting (and for review, the reviewer + decision).
+
+- `POST /research-meetings/import`: ingest a meeting record. Scope `research_meeting:import`.
+- `POST /research-meetings/{meeting_id}/segments/batch`: upsert transcript segments.
+  Scope `research_meeting:write_segment`.
+- `POST /research-meetings/{meeting_id}/analyze`: trigger AI analysis (incurs model cost).
+  Scope `research_meeting:analyze`.
+- `POST /research-meetings/candidates/{candidate_id}/review`: approve or reject a candidate
+  event. Approval writes into `event_raw_feed`. Scope `research_meeting:review`. JSON body
+  must include `reviewer` and the decision.
+- `POST /research-meetings/candidates/auto-approve`: bulk auto-approve high-confidence
+  candidates by profile. Scope `research_meeting:review`. **Most dangerous of the set** —
+  ask for the meeting id and profile name before calling.
+
+### Vague Confirmation Is Not Confirmation
+
+If the user says "处理一下纪要" or "把这场分析了", restate the action and meeting id and ask
+again before calling any POST endpoint. Refusing to call without confirmation is the safe default.
+
+### Interpretation Rules
+
+- Candidates flagged `review_status=pending` are not yet evidence. Never cite them as confirmed
+  events.
+- A candidate becomes an event only after `review` approval has been persisted. Until then, treat
+  it as a draft.
+- `analyze` may return a stale cached result; if the user wants a refresh, say analysis-version
+  matters and ask whether to force regeneration.
