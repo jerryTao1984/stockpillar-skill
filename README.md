@@ -1,6 +1,6 @@
 # StockPillar Skill for Claude Code
 
-让 Claude Code 通过自然语言调用 [StockPillar](https://stockpillar.layercake.com.cn) 的 A 股
+让 Claude Code 通过自然语言调用 [StockPillar](https://stockpillar.layercake18.com) 的 A 股
 量化数据 API，覆盖行情、技术指标、资金流、财务、行业事件、AI 供应链图谱、组合持仓
 等近 60 个端点。
 
@@ -44,13 +44,13 @@ git clone https://github.com/jerryTao1984/stockpillar-skill \
 export STOCKPILLAR_API_KEY="your-api-key-here"
 ```
 
-API Key 申请方式：访问 [stockpillar.layercake.com.cn](https://stockpillar.layercake.com.cn) 注册账户。
+API Key 申请方式：访问 [stockpillar.layercake18.com](https://stockpillar.layercake18.com) 注册账户。
 
 ### 可选环境变量
 
 ```bash
 # 默认指向生产环境，无特殊需求可不设置
-export STOCKPILLAR_API_URL="https://stockpillar.layercake.com.cn/api/skill/v1"
+export STOCKPILLAR_API_URL="https://stockpillar.layercake18.com/api/skill/v1"
 ```
 
 把这两行写到 `~/.zshrc` 或 `~/.bashrc`，重启终端即可。
@@ -94,9 +94,10 @@ stockpillar-skill/
 │   ├── financial-statements.md  # 财务三大表、业绩快报
 │   ├── industries-events.md  # 行业、主题事件、事件后验
 │   ├── supply-chain.md       # AI 供应链图谱、事件传导
-│   ├── positions.md          # 持仓、买卖、流水、T+1、流动性约束
+│   ├── positions.md          # 持仓、自选股、买卖、流水、T+1、流动性约束
 │   ├── top20.md              # 每日 Top20 榜单
-│   └── reports-macro-misc.md # AI 研报、宏观、健康检查
+│   ├── reference-data.md     # 股东结构、龙虎榜、质押、回购的字段级查阅
+│   └── reports-macro-misc.md # AI 研报、估值列表、研报纪要、宏观、健康检查
 └── scripts/
     └── test_api.py           # 端点冒烟测试
 ```

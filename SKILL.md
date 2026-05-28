@@ -207,7 +207,7 @@ Before calling the API:
 
 1. Confirm `STOCKPILLAR_API_KEY` is present.
 2. Read `STOCKPILLAR_API_URL` if set; otherwise default to
-   `https://stockpillar.layercake.com.cn/api/skill/v1`.
+   `https://stockpillar.layercake18.com/api/skill/v1`.
 3. Strip any trailing `/` from the base URL before joining with an endpoint path so the resulting
    request never contains `//api/skill/v1/...`. If you ever observe a double slash in a URL you
    built, normalize it before sending the request rather than retrying as-is.
