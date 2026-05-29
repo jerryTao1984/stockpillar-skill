@@ -1,6 +1,6 @@
 ---
 name: stockpillar-skill
-description: Use this skill when the user asks about A-share stocks, technical indicators, market data, capital flow, shareholder structure, pledge or repurchase data, financial metrics, stock screening, valuation-style reports, portfolio actions, industry/theme events, or AI supply-chain graph data from the StockPillar API.
+description: Use this skill when the user asks about A-share stocks, technical indicators, market data, capital flow, shareholder structure, pledge or repurchase data, financial metrics, stock screening, valuation-style reports, portfolio actions, industry/theme events, versioned theme stock pools, or AI supply-chain graph data from the StockPillar API.
 version: 2.3.0
 metadata:
   openclaw:
@@ -74,6 +74,7 @@ Use this skill when the user asks for StockPillar data or actions, including:
 - financial statements, valuation lists, AI-generated valuation reports
 - shareholder structure, top10 holders, holder count, pledge, repurchase, block trades
 - industry runtime status, factors, context, events; theme overlays, theme events, stock events
+- versioned theme stock pools, source versions, pool levels, and pool score/rank sorting
 - AI supply-chain graph, supply-chain company exposure, candidate review, event propagation
 - daily Top20 lists, score/prediction archives, AI comments
 - stock screening based on valuation, growth, or combined conditions
@@ -135,6 +136,8 @@ relevant to the request instead of reading everything:
 - [references/top20.md](references/top20.md): `/top20/daily` score and prediction list rules.
 - [references/industries-events.md](references/industries-events.md): industry runtime, raw events,
   theme events, theme overlay, daily brief, stock events, event outcomes.
+- [references/theme-stock-pools.md](references/theme-stock-pools.md): versioned theme stock pools,
+  source versions, level filters, and score/rank sorting.
 - [references/supply-chain.md](references/supply-chain.md): AI supply-chain graph, candidates,
   exposures, stock supply-chain position, event propagation.
 - [references/positions.md](references/positions.md): holdings, buy/sell, trades, refresh, fees,
@@ -156,6 +159,9 @@ relevant to the request instead of reading everything:
 2. Pick one endpoint per intent. Combine endpoints only when the user asked for mixed dimensions
    such as `价格 + 技术指标` or `技术信号 + 基本面`; then send the `curl` calls in sequence.
 3. Load only the relevant reference module from `references/`.
+   For versioned theme stock pool requests involving pool versions, levels, or score/rank sorting,
+   load [references/theme-stock-pools.md](references/theme-stock-pools.md), not
+   [references/industries-events.md](references/industries-events.md).
 4. Normalize stock code, theme code, event id, dates, and optional filters per
    [references/general-rules.md](references/general-rules.md).
 5. Apply the safety rules before any POST that mutates portfolio state.

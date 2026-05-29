@@ -135,10 +135,6 @@ Use the event evidence endpoints when the user asks:
 - `GET /events/raw`: raw normalized event feed from sources such as 财联社、东方财富、公告、个股新闻. Use this first when the user asks for source news, event stream, or raw evidence.
 - `GET /themes/{theme_code}/overlay`: one-day theme overlay payload including `theme_core_score`, `theme_event_adjusted_score`, `theme_stance`, `theme_confidence`, `preferred_industries`, and `preferred_stock_pool`. Use this first when the user asks whether the theme is strengthening or weakening.
 - `GET /themes/{theme_code}/stocks`: theme-scoped preferred stock pool. Use this when the user asks for the current AI theme basket, core beneficiaries, or representative names.
-- `GET /theme-stock-pools`: available versioned theme pools. Use this when the user asks what theme pools exist or does not provide a `theme_code` for a versioned pool query.
-- `GET /themes/{theme_code}/stock-pool`: versioned theme pool members from `theme_stock_pool_snapshot`. Use this when the user asks for a theme pool by version, level, segment, or core type.
-- `GET /themes/{theme_code}/stock-pool/ranked`: versioned theme pool members sorted by model score/rank. Use this when the user asks for scoring/ranking inside a theme pool.
-- `GET /themes/{theme_code}/stock-pool/versions`: version list for one theme pool. Use this when the user asks which versions are available.
 - `GET /themes/{theme_code}/daily-brief`: cached one-day theme analyst output. Use this first when the user asks for a theme summary, theme daily view, or wants to discuss the theme interactively. Do not force regeneration from this skill.
 - `GET /themes/{theme_code}/market-pulse`: theme supply-chain stock pool market pulse. Use this when the user asks for theme-level funds, price movement, turnover, valuation, or which layer/branch is strongest.
 - `GET /themes/{theme_code}/market-stocks`: theme-related stock rows with supply-chain reason plus price, funds, turnover, and valuation. Use this for ranking stocks inside a theme.
@@ -152,10 +148,6 @@ Use the event evidence endpoints when the user asks:
 - `trade_date`: exact day in `YYYYMMDD`; the service expands it to the full day for raw/theme/stock event endpoints.
 - `previous_trade_date=true`: use when the user asks for "上一个交易日".
 - `stock_limit`: optional for `/themes/{theme_code}/overlay` and `/themes/{theme_code}/stocks`; defaults to backend ranking size.
-- `source_version`: optional for `/themes/{theme_code}/stock-pool` and `/themes/{theme_code}/stock-pool/ranked`; omit it for backend current/latest version resolution.
-- `level_code`: optional for `/themes/{theme_code}/stock-pool` and `/themes/{theme_code}/stock-pool/ranked`; supports one value or multi-select by comma/repeated params. Omit it for all levels.
-- `segment_code` and `core_type`: optional for `/themes/{theme_code}/stock-pool`.
-- `is_active`: optional for `/themes/{theme_code}/stock-pool/ranked`; default is active scoring rows. Use `all` only when asked to include inactive score rows.
 - Theme daily-brief regeneration is a maintenance action. Do not add `force_refresh=true` from this skill.
 - `start_time` and `end_time`: optional datetime range for raw/theme/stock event endpoints, format `YYYY-MM-DD HH:MM:SS`.
 - `start_trade_date` and `end_trade_date`: optional date range for `/events/outcomes`, format `YYYYMMDD`.
@@ -178,7 +170,6 @@ Do not combine:
 - Raw event rows include `id`, `ingest_source`, `content_source_type`, `content_source_name`, `publish_time`, `title`, `summary`, `content_text`, `url`, `raw_ts_code`, `raw_industry_hint`, and `raw_theme_hint`.
 - Theme event rows include `theme_code`, `theme_name`, `event_type`, `sentiment`, `importance_score`, `impact_direction`, `impact_window`, `mapping_confidence`, plus raw event source fields.
 - Theme overlay rows include `theme_core_score`, `theme_event_adjusted_score`, `theme_stance`, `theme_confidence`, `preferred_industries`, and `preferred_stock_pool`.
-- Versioned theme pool rows include `ts_code`, `stock_name`, `level_code`, `level_name`, `segment_code`, `segment_name`, `core_type`, `operation_suggestion`, and classification/evidence fields. Ranked rows additionally include `score_rank`, `score_source`, `rank_key`, `score_key`, and model score/rank fields when available.
 - Theme daily brief rows include `theme_status`, `primary_drivers`, `bullish_points`, `risk_points`, `representative_stocks`, `summary`, `analysis_version`, and `from_cache`.
 - Stock event rows include `ts_code`, `stock_name`, `industry_name`, `theme_code`, `event_type`, `sentiment`, `importance_score`, `impact_direction`, `impact_window`, `mapping_confidence`, plus raw event source fields.
 - Outcome rows include `event_id`, `target_type`, `target_id`, `trade_date`, `t1_return`, `t3_return`, `t5_return`, `t20_return`, `excess_return_t1`, `excess_return_t5`, `excess_return_t20`, `max_drawdown_t5`, `outcome_label`, and `outcome_score`.
@@ -186,8 +177,7 @@ Do not combine:
 ### Interpretation Rules
 
 - Treat `/events/raw` as evidence, not as scored impact. Raw events may not yet be mapped to stocks, industries, or themes.
-- Treat `/themes/{theme_code}/stocks` as a date-bound overlay preferred basket, and `/themes/{theme_code}/stock-pool*` as versioned stored pool data. Do not substitute one for the other.
-- For versioned pool queries, do not default-exclude `L5`; omit `level_code` to return all levels unless the user asks for a specific layer set.
+- Treat `/themes/{theme_code}/stocks` as a date-bound overlay preferred basket. Versioned stored theme pools live in `theme-stock-pools.md`; do not substitute one family for the other.
 - Treat `/themes/{theme_code}/daily-brief` as the preferred cached analyst conclusion for that date. Do not ask the agent to regenerate the same day from scratch; use the web maintenance path or scheduled pipeline for refreshes.
 - When the user wants to discuss a theme conversationally, prefer the sequence `/themes/{theme_code}/daily-brief` -> `/themes/{theme_code}/overlay` -> `/themes/{theme_code}/events` rather than jumping straight to raw events.
 - Treat `importance_score` as a rule-based current estimate, not a scientifically calibrated truth.

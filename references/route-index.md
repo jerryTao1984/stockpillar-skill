@@ -142,10 +142,14 @@ Use these rules before reading endpoint-specific details:
 - Theme price/funds/valuation pulse -> `GET /themes/{theme_code}/market-pulse`.
 - Theme stock-level price/funds/valuation rows -> `GET /themes/{theme_code}/market-stocks`.
 - Theme historical price/funds/valuation trend -> `GET /themes/{theme_code}/market-history`.
-- Versioned theme pool lookup by version or level -> `GET /themes/{theme_code}/stock-pool`.
-- Versioned theme pool sorted by model score/rank -> `GET /themes/{theme_code}/stock-pool/ranked`.
+- Versioned theme pool lookup by version or level -> `GET /themes/{theme_code}/stock-pool`; load `references/theme-stock-pools.md`.
+- Versioned theme pool sorted by model score/rank -> `GET /themes/{theme_code}/stock-pool/ranked`; load `references/theme-stock-pools.md`.
 - Newly discovered company to A-share candidate mapping -> `GET /themes/{theme_code}/supply-chain/a-share-candidates/search`.
 - One event's persisted propagation result -> `GET /events/{event_id}/supply-chain-impact`.
+
+Detailed versioned theme pool semantics live in `references/theme-stock-pools.md`. Keep
+`/themes/{theme_code}/stocks` in the event/theme overlay family, and keep
+`/themes/{theme_code}/stock-pool*` in the versioned stored pool family.
 
 Mutation safety:
 

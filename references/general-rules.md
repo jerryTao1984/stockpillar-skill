@@ -30,10 +30,10 @@ Follow these shortcuts before scanning the detailed mapping:
 - "搜索股票 / 找股票代码" -> `GET /search`
 - "估值报告列表 / 估值红榜" -> `GET /valuation`
 - "风险事件列表 / 市场风险 / 个股风险" -> `GET /risk-events/market` or `GET /risk-events/stocks`
-- "主题池清单 / 有哪些主题池" -> `GET /theme-stock-pools`
-- "主题池版本 / 版本号" -> `GET /themes/{theme_code}/stock-pool/versions`
-- "主题池按层级查 / L1 L2 层股票 / 某版本主题池" -> `GET /themes/{theme_code}/stock-pool`
-- "主题池按模型评分排序 / 主题池评分 TopN" -> `GET /themes/{theme_code}/stock-pool/ranked`
+- "主题池清单 / 有哪些主题池" -> `GET /theme-stock-pools`; then load `references/theme-stock-pools.md`
+- "主题池版本 / 版本号" -> `GET /themes/{theme_code}/stock-pool/versions`; then load `references/theme-stock-pools.md`
+- "主题池按层级查 / L1 L2 层股票 / 某版本主题池" -> `GET /themes/{theme_code}/stock-pool`; then load `references/theme-stock-pools.md`
+- "主题池按模型评分排序 / 主题池评分 TopN" -> `GET /themes/{theme_code}/stock-pool/ranked`; then load `references/theme-stock-pools.md`
 - "AI 主题 / AI 供应链 / AI 图谱" -> default `theme_code=AI_EMBODIED`
 - "事件如何传导到公司" -> `GET /events/{event_id}/supply-chain-impact`
 - "某环节影响哪些公司" -> `GET /themes/{theme_code}/supply-chain/exposures`
@@ -43,6 +43,9 @@ Follow these shortcuts before scanning the detailed mapping:
 
 - `AI_EMBODIED`: AI与具身智能
   Use this as the default `theme_code` for `/themes/{theme_code}/overlay`, `/themes/{theme_code}/stocks`, `/themes/{theme_code}/daily-brief`, `/themes/{theme_code}/events`, and all `/themes/{theme_code}/supply-chain/*` endpoints unless the user explicitly asks for another theme.
+- Versioned theme stock pools are a separate namespace from event/theme overlay analysis. Discover pool
+  codes with `GET /theme-stock-pools` and then load `references/theme-stock-pools.md`; do not silently
+  map a versioned pool request to `AI_EMBODIED` just because the user says "AI 主题池".
 
 ## Naming Semantics
 
@@ -117,10 +120,10 @@ Follow these shortcuts before scanning the detailed mapping:
 - 原始新闻事件流 / 财联社快讯 / 东方财富快讯 / 公告事件 -> `GET /events/raw`: Use when the user needs raw event evidence before scoring or mapping.
 - 主题当天总状态 / 今天 AI 主题强弱如何 -> `GET /themes/{theme_code}/overlay`: Use for the current overlay score, event-adjusted score, stance, preferred industries, and preferred stock pool.
 - 主题股票池 / AI 主题核心股有哪些 -> `GET /themes/{theme_code}/stocks`: Use for theme-scoped stocks that have already been filtered and ranked by overlay priority.
-- 版本化主题池清单 -> `GET /theme-stock-pools`: Use when the user asks which theme pools exist, or before choosing a `theme_code` for versioned pool queries.
-- 主题池版本号 -> `GET /themes/{theme_code}/stock-pool/versions`: Use when the user asks what versions a theme pool has. Optional `limit`.
-- 版本化主题池股票 / 某版本主题池 / 按层级查主题池 -> `GET /themes/{theme_code}/stock-pool`: Use for stored theme pool members. Optional `source_version`; omit it when the user does not pass a version or asks for latest/current. Optional `level_code` supports comma-separated or repeated values; omit it for all levels. Optional `segment_code`, `core_type`, `page`, and `size`.
-- 主题池按模型评分排序 / 主题池评分 TopN -> `GET /themes/{theme_code}/stock-pool/ranked`: Use for stored theme pool members sorted by the model score/rank. Optional `source_version`; omit it when not specified. Optional `level_code` supports multi-select; omit it for all levels. Optional `trade_date`; omit it to let backend resolve the default scoring date. Optional `is_active=true|false|all`; default active-only.
+- 版本化主题池清单 -> `GET /theme-stock-pools`: Use when the user asks which theme pools exist, or before choosing a `theme_code` for versioned pool queries. Load `references/theme-stock-pools.md` for detailed semantics.
+- 主题池版本号 -> `GET /themes/{theme_code}/stock-pool/versions`: Use when the user asks what versions a theme pool has. Optional `limit`. Load `references/theme-stock-pools.md`.
+- 版本化主题池股票 / 某版本主题池 / 按层级查主题池 -> `GET /themes/{theme_code}/stock-pool`: Use for stored theme pool members. Optional `source_version`; omit it when the user does not pass a version or asks for latest/current. Optional `level_code` supports comma-separated or repeated values; omit it for all levels. Optional `segment_code`, `core_type`, `page`, and `size`. Load `references/theme-stock-pools.md`.
+- 主题池按模型评分排序 / 主题池评分 TopN -> `GET /themes/{theme_code}/stock-pool/ranked`: Use for stored theme pool members sorted by the model score/rank. Optional `source_version`; omit it when not specified. Optional `level_code` supports multi-select; omit it for all levels. Optional `trade_date`; omit it to let backend resolve the default scoring date. Optional `is_active=true|false|all`; default active-only. Load `references/theme-stock-pools.md`.
 - 主题日评 / 今天 AI 主题怎么总结 -> `GET /themes/{theme_code}/daily-brief`: Use for cached daily theme analysis with `theme_status`, `primary_drivers`, `bullish_points`, `risk_points`, `representative_stocks`, and `summary`. Prefer this before asking the agent to free-form summarize the same day again.
 - 主题资金流 / AI 主题今天资金和涨跌怎么样 -> `GET /themes/{theme_code}/market-pulse`: Use for theme-level aggregation by `chain_code`, `layer_index`, `exposure_type`, `relation_strength`, or `segment`.
 - 主题相关股票行情资金明细 -> `GET /themes/{theme_code}/market-stocks`: Use when the user asks which theme-related stocks are moving, with supply-chain reason, price change, turnover, main moneyflow, and valuation.
@@ -218,6 +221,8 @@ Defaults:
 - `level_code`: use only for versioned theme pool endpoints. It can be a single layer (`L1`) or multi-select (`L1,L2`, repeated params). Omit it for all levels.
 - `segment_code` and `core_type`: use only for `/themes/{theme_code}/stock-pool`.
 - `is_active`: use only for `/themes/{theme_code}/stock-pool/ranked`; pass `all` only when the user asks to include inactive score rows.
+- For all four options above, load `references/theme-stock-pools.md`; they do not belong to
+  event/theme overlay endpoints in `references/industries-events.md`.
 - `group_by`: use on `/themes/{theme_code}/market-pulse` or `/themes/{theme_code}/market-history`; supported values are `chain_code`, `layer_index`, `exposure_type`, `relation_strength`, and `segment`.
 - `sort_by`: use on `/themes/{theme_code}/market-stocks`; supported values include `pct_chg`, `amount`, `main_net_inflow`, `exposure_score`, `turnover_rate`, `total_mv`, `pe_ttm`, and `pb`.
 - `start_date` and `end_date`: required for `/themes/{theme_code}/market-history`; format `YYYYMMDD` or `YYYY-MM-DD`; maximum range is 370 calendar days.

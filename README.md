@@ -1,8 +1,8 @@
 # StockPillar Skill for OpenClaw
 
 让 OpenClaw 通过自然语言调用 [StockPillar](https://stockpillar.layercake18.com) 的 A 股
-量化数据 API，覆盖行情、技术指标、资金流、股东结构、质押回购、财务、行业事件、AI
-供应链图谱、组合持仓等 90+ 个端点。
+量化数据 API，覆盖行情、技术指标、资金流、股东结构、质押回购、财务、行业事件、
+版本化主题股票池、AI 供应链图谱、组合持仓等 90+ 个端点。
 
 ## 功能预览
 
@@ -13,6 +13,7 @@
 - "今天有哪些股票出现了 MACD 金叉？"
 - "筛选 ROE>15% 且 PE<20 的股票"
 - "看看宁德时代最近有没有股东减持、回购和质押风险"
+- "查 AI_FULL_CHAIN 主题池 V2.0 的 L1/L2 股票，并按模型评分排序"
 - "查看 AI 主题供应链六层图谱"
 - "买入 600519.SH 100 股，成本价 1500"（会要求你确认后再执行）
 - "查看最近 30 天的持仓交易流水"
@@ -94,6 +95,7 @@ stockpillar-skill/
 │   ├── reference-data.md     # 股东结构、质押、回购、大宗交易
 │   ├── financial-statements.md  # 财务三大表、业绩快报
 │   ├── industries-events.md  # 行业、主题事件、事件后验
+│   ├── theme-stock-pools.md  # 版本化主题股票池、版本、层级、评分排序
 │   ├── supply-chain.md       # AI 供应链图谱、事件传导
 │   ├── positions.md          # 持仓、买卖、流水、T+1、流动性约束
 │   ├── top20.md              # 每日 Top20 榜单
@@ -106,7 +108,10 @@ stockpillar-skill/
 
 - 发现 API 路径过期、参数变更：在本仓库提 issue
 - 端点描述不准确、Claude 路由偏差：附上你的提问原文 + Claude 实际调用的端点
-- 新增 StockPillar 后端端点：等同步更新 [references/route-index.md](references/route-index.md)
+- 新增 StockPillar 后端端点：同步更新 [references/route-index.md](references/route-index.md)
+  和对应专题 reference；版本化主题股票池要更新
+  [references/theme-stock-pools.md](references/theme-stock-pools.md)，不要混进
+  [references/industries-events.md](references/industries-events.md)
 
 ## License
 
