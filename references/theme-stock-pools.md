@@ -11,6 +11,7 @@ Use this module when the user asks for:
 - 按 L1/L2/L3/L4/L5 层级查询主题池
 - 主题池股票按模型评分或排名排序
 - 主题池版本之间的成员查看或人工研究池查询
+- 发起 / 查看股票池有效性诊断（四关体检：是不是真 β、独立性、稳定性、性价比）
 
 Do not use this module for:
 
@@ -44,6 +45,12 @@ For those requests, use `industries-events.md`.
   layer, segment, or core-type filtering.
 - `GET /themes/{theme_code}/stock-pool/ranked`: fetch stored pool members sorted by model
   score or rank. Use this when the user asks for scoring/ranking/TopN within a theme pool.
+- `POST /themes/{theme_code}/stock-pool/diagnostics`: start an async pool-effectiveness
+  diagnostic ("四关体检"). Use when the user asks to run/launch a diagnostic on a pool.
+- `GET /themes/{theme_code}/stock-pool/diagnostics`: list a version's diagnostic runs with
+  status. Use to check progress or show how many diagnostics exist.
+- `GET /themes/{theme_code}/stock-pool/diagnostics/{run_id}`: fetch one run's full four-gate
+  report. Use to show a finished diagnostic's metrics and conclusion.
 
 ## Parameters
 
@@ -124,6 +131,63 @@ Use:
 - if the user gives both level and ranking requirements, keep both filters
 - if the user does not pass `source_version`, omit it rather than guessing one
 
+### Diagnostics (四关体检)
+
+The diagnostic validates whether a pool is a real, usable β unit, across four gates:
+关1 内部凝聚力, 关2 与基准独立性, 关3 β 稳定性, 关4 β 性价比. It is **asynchronous**.
+
+`POST /themes/{theme_code}/stock-pool/diagnostics`
+
+Required:
+
+- path `theme_code`
+- JSON `source_version`
+
+Optional:
+
+- JSON `level_code`: array or comma string (e.g. `["L1","L2","L3"]`); omit = all non-L5 layers
+- JSON `end_date`: `YYYYMMDD` scoring window end; omit = latest trade day
+
+`GET /themes/{theme_code}/stock-pool/diagnostics`
+
+- optional `source_version` (omit = current/latest), `limit` (default 50)
+- returns runs newest-first under `data.records`; `data.total` = run count
+
+`GET /themes/{theme_code}/stock-pool/diagnostics/{run_id}`
+
+- returns one run; on `SUCCESS` the `report` object holds the full four-gate metrics
+
+Use (async lifecycle — important):
+
+- `POST` returns `{run_id, status:"PENDING"}` **immediately**; the diagnostic runs ~1-2 minutes
+  in the background. **Do not block on the POST or treat its response as the result.**
+- Poll the list endpoint until `status` is `SUCCESS`/`FAILED`, then fetch the detail by `run_id`.
+- Do not launch repeated runs for the same version while one is `PENDING`/`RUNNING`.
+- A `FAILED` run carries `error_message` (e.g. `行情或指数数据不足` when the chosen level subset has
+  too few members or too short a common window).
+
+Gate thresholds (for interpreting `report`):
+
+- 关1: `rho_median` (>0.5 PASS / 0.3-0.5 WARN / <0.3 FAIL) + `pc1_ratio` (>50% / 30-50% / <30%)
+- 关2: `r_squared` decides — **>0.85 FAIL (就是基准)**, 0.6-0.85 WARN, <0.6 PASS; `beta`+CI and
+  `alpha_annual_linear` are reported only
+- 关3: `beta_cv` (<0.3 / 0.3-0.5 / >0.5); if `beta_cv_applicable=false` judge by `beta_range`
+  (<0.6 / 0.6-1.0 / >1.0)
+- 关4: `sharpe` (>0.5 / 0.2-0.5 / <0.2), `information_ratio` (>0.3 / 0.1-0.3 / <0.1),
+  `max_drawdown` (<25% / 25-40% / >40%); all three must PASS
+
+`overall_conclusion` (server-derived, do not recompute):
+
+- 全 PASS → 可作为 β 池裸持
+- 关1-3 PASS、关4 WARN/FAIL → 合法 β 但需叠 α
+- 关3 FAIL → 仅短期使用，须设退出条件
+- 关2 FAIL（R²>0.85）→ 不是独立 β，弃用或重定义
+- 关1 FAIL → 池子定义无效，必须重做
+
+When answering, state the 范围 (version, level scope, `window_start`~`window_end`,
+`member_count_effective`/`member_count_raw`), the 基准 (`benchmark_name`), the four gate statuses,
+the conclusion, and the `pressure_windows` (微盘崩盘 / 中特估退潮 / 上海疫情) for tail risk.
+
 ## Important Fields
 
 Versioned pool member rows include:
@@ -196,4 +260,21 @@ Query ranked members:
 ```bash
 curl -s -H "Authorization: Bearer $STOCKPILLAR_API_KEY" \
   "${STOCKPILLAR_API_URL:-https://stockpillar.layercake18.com/api/skill/v1}/themes/AI_FULL_CHAIN/stock-pool/ranked?source_version=V2.0&level_code=L1,L2,L3&page=1&size=50"
+```
+
+Start a diagnostic, then poll for the result:
+
+```bash
+# 1) start (returns {run_id, status:"PENDING"})
+curl -s -X POST -H "Authorization: Bearer $STOCKPILLAR_API_KEY" -H "Content-Type: application/json" \
+  -d '{"source_version":"V2.0","level_code":["L1","L2","L3"]}' \
+  "${STOCKPILLAR_API_URL:-https://stockpillar.layercake18.com/api/skill/v1}/themes/AI_FULL_CHAIN/stock-pool/diagnostics"
+
+# 2) poll the list until status=SUCCESS
+curl -s -H "Authorization: Bearer $STOCKPILLAR_API_KEY" \
+  "${STOCKPILLAR_API_URL:-https://stockpillar.layercake18.com/api/skill/v1}/themes/AI_FULL_CHAIN/stock-pool/diagnostics?source_version=V2.0"
+
+# 3) fetch the full four-gate report
+curl -s -H "Authorization: Bearer $STOCKPILLAR_API_KEY" \
+  "${STOCKPILLAR_API_URL:-https://stockpillar.layercake18.com/api/skill/v1}/themes/AI_FULL_CHAIN/stock-pool/diagnostics/123"
 ```

@@ -11,6 +11,7 @@ Follow this shortcut before reading endpoint details:
 - "融资融券 / 两融余额" -> `/margin/summary`, `/margin/detail`, or `/stocks/{ts_code}/margin`.
 - "日度市场状态 / 今天适不适合开仓" -> `/market/summary` or `/market/summary/v2`.
 - "盘中情绪 / 当前市场热度 / 追强环境" -> `/market/sentiment_pulse` or `/market/sentiment_pulse/v2`.
+- "指数调仓 / 调入调出 / 指数样本调整 / 某股票被哪些指数调入调出" -> `/index-rebalance-items`.
 
 Semantic rule:
 
@@ -34,6 +35,7 @@ Endpoint selection:
 - `GET /stocks/{ts_code}/events/surveys`: institution survey records; use for调研机构、接待地点、接待人员、调研内容.
 - `GET /stocks/{ts_code}/flows/slb-sec-detail`: securities lending records; use for转融券期限、费率、数量.
 - `GET /concepts/{ts_code}/moneyflow/ths`: THS concept moneyflow; use for概念板块资金流 and distinguish it from stock-level `/stocks/{ts_code}/moneyflow`.
+- `GET /index-rebalance-items`: official index rebalance item rows; use for指数样本调入调出、按公告日/生效日/指数/股票查询调仓明细.
 
 Response shape:
 
@@ -51,6 +53,47 @@ Output guidance:
 - For chip distribution, distinguish reference summary metrics (`cyq-perf`) from price-bucket detail (`cyq-chips`).
 - For securities lending, describe `lending_rate` as fee/rate and `vol` as quantity.
 - For THS concept moneyflow, state that `ts_code` is a concept code, not necessarily an A-share stock code.
+- For index rebalance rows, state `announce_date`, `effective_date`, `index_code/index_name`, and `direction`; `direction=in` means调入, `direction=out` means调出.
+
+### `/index-rebalance-items`
+
+Use when:
+
+- the user asks for index rebalance details, 调入/调出, 指数样本调整, or official exchange index adjustment rows
+- the user asks which indexes will add/remove a specific stock
+- the user asks for all rows from a particular notice date or effective date
+
+Optional params:
+
+- `ts_code`: stock code, e.g. `301511.SZ`
+- `index_code`: local index code, e.g. `399001`, `000016`
+- `direction`: `in` or `out`
+- `source_name`: official source name such as `国证指数`, `上海证券交易所`, `中证指数`
+- `announce_date`: `YYYYMMDD`
+- `effective_date`: `YYYYMMDD`
+- `start_effective_date`, `end_effective_date`: date range for effective date
+- `is_active`: omit for active rows; pass `all` only if the user asks for inactive rows too
+- `page`, `size`
+
+Response shape:
+
+- `data.records`: rows from `index_rebalance_item`
+- `data.page`, `data.size`, `data.total`
+
+Row fields include:
+
+- `source_name`, `source_url`, `notice_title`, `announce_date`
+- `effective_date`
+- `index_code`, `index_name`
+- `direction`, `ts_code`, `stock_name`, `exchange`
+- `change_count`, `confidence`, `extracted_status`, `notes`
+
+Example:
+
+```bash
+curl "$STOCKPILLAR_API_URL/index-rebalance-items?announce_date=20260529&direction=out&size=100" \
+  -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
+```
 
 ## Endpoint Rules
 

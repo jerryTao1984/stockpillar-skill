@@ -68,12 +68,16 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /industries/context`: Auth `Bearer token`; required params `trade_date` or `previous_trade_date=true`; use for merged industry runtime context.
 - `GET /industries/events`: Auth `Bearer token`; required params `trade_date` or `previous_trade_date=true`; use for industry event tags with pagination.
 - `GET /events/raw`: Auth `Bearer token`; required params `none`; use for原始新闻事件流 evidence, with optional time/source/type filters.
+- `GET /index-rebalance-items`: Auth `Bearer token`; scope `market:read`; required params `none`; optional query `ts_code`, `index_code`, `direction` (`in`/`out`), `source_name`, `announce_date`, `effective_date`, `start_effective_date`, `end_effective_date`, `is_active`, `page`, `size`; use for official index rebalance details from `index_rebalance_item`, including index-level 调入/调出 rows. Response uses `data.records`.
 - `GET /themes/{theme_code}/overlay`: Auth `Bearer token`; required params `trade_date` or `previous_trade_date=true`; use for theme overlay scores, stance, preferred industries, and preferred stock pool.
 - `GET /themes/{theme_code}/stocks`: Auth `Bearer token`; required params `trade_date` or `previous_trade_date=true`; use for the filtered theme stock pool already ranked by overlay priority.
 - `GET /theme-stock-pools`: Auth `Bearer token`; required params `none`; use to list available versioned theme pools. Response uses `data.records`.
 - `GET /themes/{theme_code}/stock-pool`: Auth `Bearer token`; required params path `theme_code`; optional query `source_version`, `level_code`, `segment_code`, `core_type`, `page`, `size`; use for versioned theme pool members. `level_code` accepts one or multiple values, either comma-separated or repeated. If `source_version` is omitted, backend resolves current/latest. If `level_code` is omitted, backend returns all levels.
 - `GET /themes/{theme_code}/stock-pool/ranked`: Auth `Bearer token`; required params path `theme_code`; optional query `source_version`, `level_code`, `trade_date`, `is_active`, `page`, `size`; use for versioned theme pool members sorted by model score/rank. `level_code` accepts one or multiple values; omit it for all levels. `is_active` defaults to active score rows; pass `all` only if the user asks to include inactive scoring rows. Response includes `score_trade_date`, `score_source`, `pool_count`, `ranked_count`, and `records`.
 - `GET /themes/{theme_code}/stock-pool/versions`: Auth `Bearer token`; required params path `theme_code`; optional query `limit`; use to list versions of a versioned theme pool.
+- `POST /themes/{theme_code}/stock-pool/diagnostics`: Auth `Bearer token`; required params path `theme_code`, JSON `source_version`; optional JSON `level_code` (array/comma string, omit = all non-L5), `end_date` (`YYYYMMDD`); use to start an async pool-effectiveness "四关体检". Returns `{run_id, status:"PENDING"}` immediately; runs ~1-2 min in background, so poll the list/detail endpoints rather than blocking. Load `references/theme-stock-pools.md`.
+- `GET /themes/{theme_code}/stock-pool/diagnostics`: Auth `Bearer token`; required params path `theme_code`; optional query `source_version`, `limit`; use to list a version's diagnostic runs (newest first) with `status`/gate fields/`overall_conclusion`; `data.total` = run count. Load `references/theme-stock-pools.md`.
+- `GET /themes/{theme_code}/stock-pool/diagnostics/{run_id}`: Auth `Bearer token`; required params path `theme_code`, `run_id`; use to fetch one run's full four-gate report (`report` object with all gate metrics, `overall_conclusion`, `warnings`, `pressure_windows`). Load `references/theme-stock-pools.md`.
 - `GET /themes/{theme_code}/daily-brief`: Auth `Bearer token`; required params `trade_date` or `previous_trade_date=true`; use for cached daily theme analysis. Do not pass `force_refresh=true` from this skill.
 - `GET /themes/{theme_code}/market-pulse`: Auth `Bearer token`; required params path `theme_code`; optional query `trade_date`, `group_by`, `market`, `chain_code`, `layer_index`, `exposure_type`, `min_exposure_score`, `top_n`; use for theme-level price, turnover, main moneyflow, and valuation aggregation by supply-chain grouping.
 - `GET /themes/{theme_code}/market-stocks`: Auth `Bearer token`; required params path `theme_code`; optional query `trade_date`, `market`, `chain_code`, `layer_index`, `exposure_type`, `min_exposure_score`, `sort_by`, `sort_order`, `page`, `size`; use for theme-related stock rows with supply-chain reason, price move, funds, turnover, and valuation.
@@ -137,6 +141,7 @@ Use these rules before reading endpoint-specific details:
 - One-call ownership, pledge, and repurchase overview -> `GET /stocks/{ts_code}/ownership/overview`.
 - Daily market state -> `GET /market/summary` or `/market/summary/v2`.
 - Intraday market mood -> `GET /market/sentiment_pulse` or `/market/sentiment_pulse/v2`.
+- Index rebalance / 调仓 / 调入调出明细 -> `GET /index-rebalance-items`; filter by `announce_date`, `effective_date`, `index_code`, `ts_code`, or `direction`.
 - Supply-chain layer or graph structure -> `GET /themes/{theme_code}/supply-chain/graph`.
 - Supply-chain segment to impacted companies -> `GET /themes/{theme_code}/supply-chain/exposures`.
 - Theme price/funds/valuation pulse -> `GET /themes/{theme_code}/market-pulse`.
@@ -144,6 +149,7 @@ Use these rules before reading endpoint-specific details:
 - Theme historical price/funds/valuation trend -> `GET /themes/{theme_code}/market-history`.
 - Versioned theme pool lookup by version or level -> `GET /themes/{theme_code}/stock-pool`; load `references/theme-stock-pools.md`.
 - Versioned theme pool sorted by model score/rank -> `GET /themes/{theme_code}/stock-pool/ranked`; load `references/theme-stock-pools.md`.
+- Run / view pool effectiveness "四关体检" diagnostic (是不是真 β、独立性、稳定性、性价比) -> start `POST /themes/{theme_code}/stock-pool/diagnostics`, then poll `GET /themes/{theme_code}/stock-pool/diagnostics` and `GET .../diagnostics/{run_id}`; async (~1-2 min), do not block on the POST; load `references/theme-stock-pools.md`.
 - Newly discovered company to A-share candidate mapping -> `GET /themes/{theme_code}/supply-chain/a-share-candidates/search`.
 - One event's persisted propagation result -> `GET /events/{event_id}/supply-chain-impact`.
 
