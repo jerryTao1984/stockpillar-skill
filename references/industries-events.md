@@ -120,69 +120,6 @@ These fields are easy to misread. Treat them with the following units:
 - When comparing industries, prefer `/industries/factors` because it is already ordered by `final_score`.
 - Do not convert industry momentum fields again. `price_momentum_5d=6.04` should be read and reported as `6.04%`.
 
-## `/themes/{theme_code}/stock-pool` Guide
-
-Use this when the user asks for the **committed, versioned theme research pool** rather than the
-daily overlay-ranked picks. Typical phrasing:
-
-- 主题股票池里有哪些股 / 当前 AI 主题的核心层是谁
-- L1 核心层、L4 概念层各有哪些标的
-- 半导体底座类（L1B）/ AI芯片 / 光模块 段的成分股
-- 这个主题的池子是什么时候建的、上一版本是哪个
-- 这只票是怎么被纳入主题池的（取 `level_reason` / `classification_reason` / `evidence_summary`）
-
-### Endpoint Choice
-
-- `GET /themes/{theme_code}/stock-pool`: snapshot rows of the current (or specified) version,
-  with per-row layer, segment, core_type, operation suggestion, audit reasons. Backed by table
-  `theme_stock_pool_snapshot`.
-- `GET /themes/{theme_code}/stock-pool/versions`: the version timeline. Backed by
-  `theme_pool_version`. Use when the user asks for version history or wants to diff versions.
-
-Do **not** confuse this with:
-
-- `GET /themes/{theme_code}/stocks` — overlay-day preferred basket, daily ranking (different table,
-  different intent).
-- `GET /themes/{theme_code}/market-stocks` — supply-chain-driven theme rows with price/funds rows.
-
-### Parameters
-
-- `source_version` (optional): explicit version key such as `V1.3` or `ai_full_chain_v1_4`.
-  Default = current active version (`is_current=1`).
-- `level_code` (optional): one of `L1`, `L2`, `L3`, `L4`, `L5`, `PRIMARY`, `INDEX`, `UNIVERSE`.
-- `segment_code` (optional): supply-chain segment code such as `AI_CHIP`, `OPTICAL_CPO`, `PCB`,
-  `MEMORY_ADV_PACKAGING`, `AIDC_POWER_COOLING`, `IDC_CLOUD`, `SEMI_BASE`, `AI_SOFTWARE`,
-  `AI_APPLICATION`, `AIGC_CONTENT`, `ROBOTICS_EMBODIED`, `EDGE_AI_IOT`, `DATA_TOOLCHAIN`,
-  `WEAK_CONCEPT`, `OTHER`. Filter narrows by exact match.
-- `core_type` (optional): `L1A` (direct AI elasticity) or `L1B` (semiconductor base core).
-- `page`, `size`: standard pagination; default `size=200`, max `1000`.
-- `/versions` endpoint: optional `limit` (default 20, max 200).
-
-### Response Shape
-
-`/stock-pool` returns:
-
-```json
-{"version": {"source_version": "V1.3", "snapshot_date": "2026-05-27",
-              "is_current": true, "build_status": "ACTIVE",
-              "classifier_version": "rule_v1_3",
-              "source_config_json": {...}},
- "records": [{"ts_code": "300308.SZ", "level_code": "L1", "segment_code": "OPTICAL_CPO",
-              "core_type": "L1A", "operation_suggestion": "核心跟踪", ...}],
- "page": 1, "size": 200, "total": 47}
-```
-
-`source_detail_json` and `matched_rules_json` are returned as parsed JSON (not strings).
-
-### Interpretation Rules
-
-- The pool is **research-grade and versioned**, not a daily signal. State the version and
-  snapshot date in the answer (`基于版本 V1.3 / 快照日 2026-05-27`).
-- `level_code` represents committed conviction: L1 core, L2 important, L3 watch, L4 concept,
-  L5 cut. Generic layers (`PRIMARY`, `INDEX`, `UNIVERSE`) come from the workbook-style imports.
-- `core_type=L1B` only appears for semiconductor-base segments — do not treat it as a generic flag.
-- `is_current=false` means the version was archived; do not call it the active pool.
-
 ## `/events/*` Guide
 
 Use the event evidence endpoints when the user asks:
@@ -198,6 +135,10 @@ Use the event evidence endpoints when the user asks:
 - `GET /events/raw`: raw normalized event feed from sources such as 财联社、东方财富、公告、个股新闻. Use this first when the user asks for source news, event stream, or raw evidence.
 - `GET /themes/{theme_code}/overlay`: one-day theme overlay payload including `theme_core_score`, `theme_event_adjusted_score`, `theme_stance`, `theme_confidence`, `preferred_industries`, and `preferred_stock_pool`. Use this first when the user asks whether the theme is strengthening or weakening.
 - `GET /themes/{theme_code}/stocks`: theme-scoped preferred stock pool. Use this when the user asks for the current AI theme basket, core beneficiaries, or representative names.
+- `GET /theme-stock-pools`: available versioned theme pools. Use this when the user asks what theme pools exist or does not provide a `theme_code` for a versioned pool query.
+- `GET /themes/{theme_code}/stock-pool`: versioned theme pool members from `theme_stock_pool_snapshot`. Use this when the user asks for a theme pool by version, level, segment, or core type.
+- `GET /themes/{theme_code}/stock-pool/ranked`: versioned theme pool members sorted by model score/rank. Use this when the user asks for scoring/ranking inside a theme pool.
+- `GET /themes/{theme_code}/stock-pool/versions`: version list for one theme pool. Use this when the user asks which versions are available.
 - `GET /themes/{theme_code}/daily-brief`: cached one-day theme analyst output. Use this first when the user asks for a theme summary, theme daily view, or wants to discuss the theme interactively. Do not force regeneration from this skill.
 - `GET /themes/{theme_code}/market-pulse`: theme supply-chain stock pool market pulse. Use this when the user asks for theme-level funds, price movement, turnover, valuation, or which layer/branch is strongest.
 - `GET /themes/{theme_code}/market-stocks`: theme-related stock rows with supply-chain reason plus price, funds, turnover, and valuation. Use this for ranking stocks inside a theme.
@@ -211,6 +152,10 @@ Use the event evidence endpoints when the user asks:
 - `trade_date`: exact day in `YYYYMMDD`; the service expands it to the full day for raw/theme/stock event endpoints.
 - `previous_trade_date=true`: use when the user asks for "上一个交易日".
 - `stock_limit`: optional for `/themes/{theme_code}/overlay` and `/themes/{theme_code}/stocks`; defaults to backend ranking size.
+- `source_version`: optional for `/themes/{theme_code}/stock-pool` and `/themes/{theme_code}/stock-pool/ranked`; omit it for backend current/latest version resolution.
+- `level_code`: optional for `/themes/{theme_code}/stock-pool` and `/themes/{theme_code}/stock-pool/ranked`; supports one value or multi-select by comma/repeated params. Omit it for all levels.
+- `segment_code` and `core_type`: optional for `/themes/{theme_code}/stock-pool`.
+- `is_active`: optional for `/themes/{theme_code}/stock-pool/ranked`; default is active scoring rows. Use `all` only when asked to include inactive score rows.
 - Theme daily-brief regeneration is a maintenance action. Do not add `force_refresh=true` from this skill.
 - `start_time` and `end_time`: optional datetime range for raw/theme/stock event endpoints, format `YYYY-MM-DD HH:MM:SS`.
 - `start_trade_date` and `end_trade_date`: optional date range for `/events/outcomes`, format `YYYYMMDD`.
@@ -233,6 +178,7 @@ Do not combine:
 - Raw event rows include `id`, `ingest_source`, `content_source_type`, `content_source_name`, `publish_time`, `title`, `summary`, `content_text`, `url`, `raw_ts_code`, `raw_industry_hint`, and `raw_theme_hint`.
 - Theme event rows include `theme_code`, `theme_name`, `event_type`, `sentiment`, `importance_score`, `impact_direction`, `impact_window`, `mapping_confidence`, plus raw event source fields.
 - Theme overlay rows include `theme_core_score`, `theme_event_adjusted_score`, `theme_stance`, `theme_confidence`, `preferred_industries`, and `preferred_stock_pool`.
+- Versioned theme pool rows include `ts_code`, `stock_name`, `level_code`, `level_name`, `segment_code`, `segment_name`, `core_type`, `operation_suggestion`, and classification/evidence fields. Ranked rows additionally include `score_rank`, `score_source`, `rank_key`, `score_key`, and model score/rank fields when available.
 - Theme daily brief rows include `theme_status`, `primary_drivers`, `bullish_points`, `risk_points`, `representative_stocks`, `summary`, `analysis_version`, and `from_cache`.
 - Stock event rows include `ts_code`, `stock_name`, `industry_name`, `theme_code`, `event_type`, `sentiment`, `importance_score`, `impact_direction`, `impact_window`, `mapping_confidence`, plus raw event source fields.
 - Outcome rows include `event_id`, `target_type`, `target_id`, `trade_date`, `t1_return`, `t3_return`, `t5_return`, `t20_return`, `excess_return_t1`, `excess_return_t5`, `excess_return_t20`, `max_drawdown_t5`, `outcome_label`, and `outcome_score`.
@@ -240,6 +186,8 @@ Do not combine:
 ### Interpretation Rules
 
 - Treat `/events/raw` as evidence, not as scored impact. Raw events may not yet be mapped to stocks, industries, or themes.
+- Treat `/themes/{theme_code}/stocks` as a date-bound overlay preferred basket, and `/themes/{theme_code}/stock-pool*` as versioned stored pool data. Do not substitute one for the other.
+- For versioned pool queries, do not default-exclude `L5`; omit `level_code` to return all levels unless the user asks for a specific layer set.
 - Treat `/themes/{theme_code}/daily-brief` as the preferred cached analyst conclusion for that date. Do not ask the agent to regenerate the same day from scratch; use the web maintenance path or scheduled pipeline for refreshes.
 - When the user wants to discuss a theme conversationally, prefer the sequence `/themes/{theme_code}/daily-brief` -> `/themes/{theme_code}/overlay` -> `/themes/{theme_code}/events` rather than jumping straight to raw events.
 - Treat `importance_score` as a rule-based current estimate, not a scientifically calibrated truth.
@@ -247,46 +195,3 @@ Do not combine:
 - Use `/events/outcomes` to check whether a class of events actually produced positive or negative market feedback.
 - If `/events/outcomes` is empty, say there is no available post-event calibration data yet; do not conclude the event had no impact.
 - When explaining impact, cite the source event `title`, `publish_time`, `content_source_name`, and URL if present.
-
-## Theme Supplementary (主题补充)
-
-When the basic theme overlay/events endpoints are not enough, these supplementary endpoints add
-context for theme metadata, media coverage, supply-chain audit quality, and domestic-substitution
-narratives.
-
-### Endpoint Choice
-
-- `GET /themes`: lists active themes. Use as the entry point when the user does not yet know which
-  `theme_code` they want.
-- `GET /themes/{theme_code}/news-videos`: AI-curated news video records for the theme on a
-  given trade_date. Use when the user asks 「这个主题最近有什么新闻视频 / 媒体覆盖」.
-- `GET /themes/{theme_code}/supply-chain/quality-audit`: graph quality audit findings —
-  unreviewed candidates, low-confidence edges, dangling nodes. Use when the user asks
-  「主题图谱信源是不是可靠 / 有没有低质量关系」. Read-only; mutation lives under the
-  maintenance UI.
-- `GET /themes/{theme_code}/supply-chain/domestic-substitution`: the domestic-substitution
-  candidate pool with status, technology layer, A-share mapping. Use when the user discusses
-  国产替代 narratives or asks for substitution-themed beneficiaries.
-- `GET /themes/{theme_code}/supply-chain/source-matrix`: per-source priority matrix that drives
-  supply-chain propagation. Use when the user asks「这个判断是从哪个信源出来的 / 信源权重」.
-
-### Parameters
-
-- `/themes`: no params; rows include `theme_code`, `theme_name`, `theme_group`, `priority`,
-  `is_active`. Sorted by `priority` then `theme_code`.
-- `/themes/{theme_code}/news-videos`: optional `trade_date`, `limit` (default 8, max 50).
-- `/themes/{theme_code}/supply-chain/quality-audit`: optional `limit` (default 200).
-- `/themes/{theme_code}/supply-chain/domestic-substitution`: optional `page`, `size` (default 50,
-  max 200).
-- `/themes/{theme_code}/supply-chain/source-matrix`: no params beyond `theme_code`.
-
-### Interpretation Rules
-
-- `quality-audit` findings are advisory — they tag potential issues, not confirmed bugs. Surface
-  the audit reason verbatim instead of paraphrasing.
-- `domestic-substitution` rows tagged `WORKBOOK_V2` or `PROFILE_*` are research-curated; do not
-  treat them as official disclosures.
-- When `source-matrix` shows a source with low priority weight, do not amplify a claim that
-  relies primarily on that source — flag the weakness instead.
-- `news-videos` is media coverage, not a fundamental signal — never use it alone to make
-  a directional call.

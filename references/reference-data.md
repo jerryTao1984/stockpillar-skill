@@ -1,14 +1,18 @@
 # StockPillar Reference Data
 
-Per-endpoint deep reference for the shareholder/ownership/pledge/repurchase/block-trade family.
-Covers exact field names, date-filter conventions, and per-endpoint output rendering rules.
+## Agent Decision Shortcut
 
-For natural-language → endpoint trigger words, see
-[general-rules.md](general-rules.md). For cross-endpoint interpretation rules (concentration vs
-dispersion, pledge ratio risk thresholds, planned vs executed repurchases), see the
-"Ownership, Capital, Pledges" section of [financial-statements.md](financial-statements.md).
+Follow this shortcut before reading endpoint details:
 
-Semantic boundary (keep these straight before reading endpoint rules):
+- "谁在增持 / 谁在减持 / 董监高减持" -> `/stocks/{ts_code}/events/holder-trades`
+- "大宗交易 / 折价成交 / 接盘方" -> `/stocks/{ts_code}/events/block-trades`
+- "股票回购 / 回购进度 / 回购金额" -> `/stocks/{ts_code}/events/repurchases`
+- "股东户数 / 筹码集中度" -> `/stocks/{ts_code}/ownership/holder-numbers`
+- "前十大股东 / 前十大流通股东" -> `/stocks/{ts_code}/ownership/top10-holders` or `/stocks/{ts_code}/ownership/top10-floatholders`
+- "股权质押 / 质押比例 / 质押风险" -> `/stocks/{ts_code}/pledges/stat` or `/stocks/{ts_code}/pledges/detail`
+- "把股东结构、质押、回购合在一起看" -> `/stocks/{ts_code}/ownership/overview`
+
+Semantic rule:
 
 - `holder-trades` is disclosure-driven ownership change.
 - `block-trades` is negotiated transaction flow between counterparties.

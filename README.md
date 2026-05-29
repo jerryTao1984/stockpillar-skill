@@ -1,40 +1,34 @@
-# StockPillar Skill for Claude Code
+# StockPillar Skill for OpenClaw
 
-让 Claude Code 通过自然语言调用 [StockPillar](https://stockpillar.layercake18.com) 的 A 股
-量化数据 API，覆盖行情、技术指标、资金流、财务、行业事件、AI 供应链图谱、组合持仓
-等近 60 个端点。
+让 OpenClaw 通过自然语言调用 [StockPillar](https://stockpillar.layercake18.com) 的 A 股
+量化数据 API，覆盖行情、技术指标、资金流、股东结构、质押回购、财务、行业事件、AI
+供应链图谱、组合持仓等 90+ 个端点。
 
 ## 功能预览
 
-装上之后，你可以直接用中文问 Claude：
+装上之后，你可以直接用中文问 OpenClaw：
 
 - "现在贵州茅台多少钱？"
 - "查 600519.SH 最近 60 天的 MA、MACD、RSI、KDJ"
 - "今天有哪些股票出现了 MACD 金叉？"
 - "筛选 ROE>15% 且 PE<20 的股票"
-- "查看 AI 主题供应链五层图谱"
+- "看看宁德时代最近有没有股东减持、回购和质押风险"
+- "查看 AI 主题供应链六层图谱"
 - "买入 600519.SH 100 股，成本价 1500"（会要求你确认后再执行）
 - "查看最近 30 天的持仓交易流水"
 
-Claude 会把请求拆解为对应的 API 调用，并用中文汇总结果。
+OpenClaw 会把请求拆解为对应的 API 调用，并用中文汇总结果。
 
 ## 安装
 
-### 方式 1：克隆到用户级 skills 目录（全局可用）
+克隆到 OpenClaw 工作区的 skills 目录：
 
 ```bash
 git clone https://github.com/jerryTao1984/stockpillar-skill \
-  ~/.claude/skills/stockpillar-skill
+  ~/.openclaw/workspace/skills/stockpillar-skill
 ```
 
-### 方式 2：克隆到项目内（仅当前项目可用，可随仓库提交）
-
-```bash
-cd /path/to/your/project
-mkdir -p .claude/skills
-git clone https://github.com/jerryTao1984/stockpillar-skill \
-  .claude/skills/stockpillar-skill
-```
+装好后开一个新会话（`/new`），或重启网关（`openclaw gateway restart`），让 OpenClaw 识别该 skill。
 
 ## 配置
 
@@ -57,18 +51,24 @@ export STOCKPILLAR_API_URL="https://stockpillar.layercake18.com/api/skill/v1"
 
 ## 验证安装
 
-启动 Claude Code，输入：
+先确认 skill 已被加载：
+
+```bash
+openclaw skills list
+```
+
+然后开一个新会话，输入：
 
 ```
 查询贵州茅台的基本信息
 ```
 
-如果 Claude 调出股票名称、行业、上市日期等信息，说明 skill 已生效。
+如果 OpenClaw 调出股票名称、行业、上市日期等信息，说明 skill 已生效。
 
 也可以跑自带的 smoke test 脚本：
 
 ```bash
-cd ~/.claude/skills/stockpillar-skill
+cd ~/.openclaw/workspace/skills/stockpillar-skill
 python3 scripts/test_api.py
 ```
 
@@ -87,17 +87,17 @@ python3 scripts/test_api.py
 stockpillar-skill/
 ├── SKILL.md                  # 主入口，定义 skill 元数据和触发规则
 ├── references/               # 按需加载的端点详细规则
-│   ├── route-index.md        # 60+ 个 API 路由的权威清单
+│   ├── route-index.md        # 90+ 个 API 路由的权威清单
 │   ├── general-rules.md      # 自然语言到端点的映射、参数规范
 │   ├── technical.md          # 技术指标、K 线、信号扫描
 │   ├── market-data.md        # 实时行情、资金流、北向资金、两融
+│   ├── reference-data.md     # 股东结构、质押、回购、大宗交易
 │   ├── financial-statements.md  # 财务三大表、业绩快报
 │   ├── industries-events.md  # 行业、主题事件、事件后验
 │   ├── supply-chain.md       # AI 供应链图谱、事件传导
-│   ├── positions.md          # 持仓、自选股、买卖、流水、T+1、流动性约束
+│   ├── positions.md          # 持仓、买卖、流水、T+1、流动性约束
 │   ├── top20.md              # 每日 Top20 榜单
-│   ├── reference-data.md     # 股东结构、龙虎榜、质押、回购的字段级查阅
-│   └── reports-macro-misc.md # AI 研报、估值列表、研报纪要、宏观、健康检查
+│   └── reports-macro-misc.md # AI 研报、宏观、健康检查
 └── scripts/
     └── test_api.py           # 端点冒烟测试
 ```
