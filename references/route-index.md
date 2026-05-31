@@ -102,8 +102,8 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /market/summary/v2`: Auth `Bearer token`; required params `none`; use for the same v2 daily market state payload exposed through the explicit versioned path.
 - `GET /market/sentiment_pulse/v2`: Auth `Bearer token`; required params `none`; use for the same v2 intraday market state payload exposed through the explicit versioned path.
 - `POST /stocks/{ts_code}/analysis/report`: Auth `Bearer token`; required params path `ts_code`; use to generate an AI valuation report and shareable HTML.
-- `GET /valuation`: Auth `Bearer token`; required params `none`; use for the valuation report list with optional `industry`, `tab`, `page`, and `limit`. Response uses `data.records`.
-- `GET /valuation/{ts_code}`: Auth `Bearer token`; required params path `ts_code`; use for a single stock's latest valuation report detail.
+- `GET /valuation`: Auth `Bearer token`; required params `none`; use for the valuation report list with optional `industry`, `tab`, `page`, and `limit`. Response uses `data.records`. Rows include narrative-risk-anchor fields: `narrative_implied_growth` (market-implied growth from reverse DCF), `narrative_delivering` (兑现中/已低于隐含/无法判定), `narrative_cash_quality` (优/中/差/未知), `narrative_mechanical_risk` (1 = decelerating-below-implied or weak cash; the model never flags on growth level itself).
+- `GET /valuation/{ts_code}`: Auth `Bearer token`; required params path `ts_code`; use for a single stock's latest valuation report detail. The detail `report` includes the same `narrative_*` fields; full narrative breakdown (reasons, hist_cagr) is inside `data_json.narrative_risk`.
 - `GET /stocks/{ts_code}/balancesheet`: Auth `Bearer token`; required params path `ts_code`; use for raw balance-sheet statement rows.
 - `GET /stocks/{ts_code}/cashflow`: Auth `Bearer token`; required params path `ts_code`; use for raw cash-flow statement rows.
 - `GET /stocks/{ts_code}/income`: Auth `Bearer token`; required params path `ts_code`; use for raw income-statement rows.

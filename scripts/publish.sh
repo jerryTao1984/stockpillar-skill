@@ -5,6 +5,8 @@
 #
 # Usage:
 #   ./publish.sh "Release notes for this sync"
+#   ./publish.sh -y "Release notes"        # skip the confirm prompt (non-interactive)
+#   PUBLISH_ASSUME_YES=1 ./publish.sh "..."  # same, via env
 #
 # Prerequisites:
 #   - ~/stockpillar-skill-pub already cloned from the public repo
@@ -12,7 +14,18 @@
 
 set -euo pipefail
 
-MSG="${1:-Sync from monorepo}"
+# Parse args: an optional -y/--yes flag (anywhere) skips the interactive confirm;
+# the first non-flag arg is the commit message. PUBLISH_ASSUME_YES=1 also skips it.
+ASSUME_YES="${PUBLISH_ASSUME_YES:-0}"
+MSG=""
+for arg in "$@"; do
+  case "${arg}" in
+    -y|--yes) ASSUME_YES=1 ;;
+    *) [[ -z "${MSG}" ]] && MSG="${arg}" ;;
+  esac
+done
+MSG="${MSG:-Sync from monorepo}"
+
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DST="${HOME}/stockpillar-skill-pub"
 
@@ -43,10 +56,14 @@ fi
 
 git add .
 git status --short
-read -r -p "Commit and push? [y/N] " ans
-if [[ "${ans}" != "y" && "${ans}" != "Y" ]]; then
-  echo "Aborted; staged changes left in ${DST}."
-  exit 0
+if [[ "${ASSUME_YES}" == "1" ]]; then
+  echo "Auto-confirm enabled (-y / PUBLISH_ASSUME_YES); committing and pushing."
+else
+  read -r -p "Commit and push? [y/N] " ans
+  if [[ "${ans}" != "y" && "${ans}" != "Y" ]]; then
+    echo "Aborted; staged changes left in ${DST}."
+    exit 0
+  fi
 fi
 
 git commit -m "${MSG}"
