@@ -181,11 +181,11 @@ curl "$STOCKPILLAR_API_URL/stocks/00700.HK/prices/minute?trade_date=20260617&fre
 
 Response guidance:
 
-- A-share same-day rows come from QMT cache and usually include `source=qmt_1m`
+- A-share same-day rows are queried live from QMT Bridge `/market/minute` and usually include `source=qmt_1m`
 - HK/US rows come from Futu OpenD and include `source=futu_opend`, `market`, `futu_code`, and `freq=1m`
 - rows are minute OHLCV bars with `trade_time`, `open`, `high`, `low`, `close`, `volume`, and `amount`
 - an empty `data` list means no cached or provider-returned bars for that stock/date, not that the stock did not trade
-- do not promise non-1m frequencies or historical minute bars from this route
+- use `/stocks/{ts_code}/prices/kline?freq=1m|5m|60m` for HK/US historical minute bars
 
 ### `/stocks/{ts_code}/prices/kline`
 
@@ -193,6 +193,7 @@ Use when:
 
 - the user asks for historical daily K-line, 日线, K线, 走势, or a date-range price window
 - the user asks for HK/US historical daily prices such as `00700.HK`, `HK.00700`, `AAPL.US`, or `US.AAPL`
+- the user asks for HK/US historical week/month/minute K-line
 
 Required params:
 
@@ -202,6 +203,8 @@ Required params:
 Optional params:
 
 - `limit` for HK/US rows; use only when you need to cap the response
+- `freq` for HK/US via Futu OpenD: `day`, `week`, `month`, `1m`, `5m`, or `60m`; omit `freq` for the legacy stored daily K-line path
+- `adjust` for HK/US Futu history: `qfq`, `hfq`, or `none`; default `qfq`
 
 Request:
 
@@ -212,9 +215,11 @@ curl "$STOCKPILLAR_API_URL/stocks/AAPL.US/prices/kline?start_date=20260101&end_d
 
 Response guidance:
 
-- HK/US daily rows are ODS raw daily bars with `freq=1d`, `market`, `currency`, `adjust=none`, and source such as `polygon_grouped`, `tushare_hk`, or `yahoo_hk`
+- HK/US requests without `freq` return stored ODS daily bars with `freq=1d`, `market`, `currency`, `adjust=none`, and source such as `polygon_grouped`, `tushare_hk`, or `yahoo_hk`
+- HK/US requests with `freq` return live Futu OpenD history rows with `source=futu_opend`; supported frequencies are `day`, `week`, `month`, `1m`, `5m`, and `60m`
+- A-share K-line currently supports daily rows only from this route; A-share historical minute bars are not returned here as OSS URLs
 - summarize the date range, row count, latest close, interval change, high, and low
-- do not use this route for minute bars or realtime quotes
+- do not use this route for realtime quotes
 
 ### `/stocks/{ts_code}/moneyflow`
 

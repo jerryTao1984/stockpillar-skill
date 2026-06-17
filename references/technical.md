@@ -355,7 +355,7 @@ Response guidance:
 
 ### `/stocks/{ts_code}/prices/minute`
 
-Use for same-day intraday 1m minute bars. A-share rows use QMT cache and HK/US rows use Futu OpenD. This is price-bar data, not a technical signal endpoint.
+Use for same-day intraday 1m minute bars. A-share rows are queried live from QMT Bridge and HK/US rows use Futu OpenD. This is price-bar data, not a technical signal endpoint.
 
 Use when:
 
@@ -400,6 +400,7 @@ Use when:
 - the user asks for recent走势, 区间涨跌, highest/lowest, or K-line data
 - the user wants date-range price history
 - the user asks for HK/US daily K-line such as `00700.HK`, `HK.00700`, `AAPL.US`, or `US.AAPL`
+- the user asks for HK/US historical week/month/minute K-line
 - the user asks for moving averages such as `MA5`, `MA20`, or `MA60` and backend MA fields are not explicitly verified
 
 Do not use when:
@@ -424,6 +425,8 @@ Optional params:
 - `page`
 - `size`
 - `limit` for HK/US daily K-line responses
+- `freq` for HK/US via Futu OpenD: `day`, `week`, `month`, `1m`, `5m`, or `60m`
+- `adjust` for HK/US Futu history: `qfq`, `hfq`, or `none`
 
 Notes:
 
@@ -441,11 +444,12 @@ Response guidance:
 
 - first give the date range
 - then summarize latest close, interval change, high, and low
-- for HK/US daily K-line, expect `market`, `currency`, `adjust=none`, `freq=1d`, and source such as `polygon_grouped`, `tushare_hk`, or `yahoo_hk`
+- for HK/US without `freq`, expect stored daily rows with source such as `polygon_grouped`, `tushare_hk`, or `yahoo_hk`
+- for HK/US with `freq`, expect Futu OpenD rows with `source=futu_opend`; supported frequencies are `day`, `week`, `month`, `1m`, `5m`, and `60m`
+- A-share K-line currently supports daily rows only from this route; do not expect A-share historical minute bars or OSS URLs here
 - if the user asked for moving averages, state they were derived from K-line closes
 - mention volume or turnover only if it adds value
 - if the user wants chart interpretation, say it is price-based rather than signal-based
-- do not promise weekly or monthly aggregation unless the API has explicitly added those parameters
 
 ### `/screen/stocks`
 
