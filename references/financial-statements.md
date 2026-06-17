@@ -16,6 +16,8 @@ Use these rules:
 - numeric `period` means latest N records
 - invalid `period` returns `400`
 - if the user does not ask for history, prefer `latest`
+- A-share financial endpoints read the A-share financial tables; U.S. `.US` endpoints read SEC-derived tables (`source=sec_companyfacts`). Hong Kong financial statements are not skill-visible.
+- For U.S. `.US` rows, optional `period_type` can filter SEC-derived rows such as `ANNUAL` or `CUMULATIVE` when the user asks for annual vs cumulative periods.
 
 ## Endpoint Rules
 
@@ -34,6 +36,7 @@ Do not use when:
 Example user asks:
 
 - `贵州茅台最新财务指标怎么样`
+- `AAPL.US 最新 SEC 财报摘要`
 - `这只股票的 ROE 和估值水平高吗`
 - `帮我看一下基本面质量`
 
@@ -57,11 +60,19 @@ curl "$STOCKPILLAR_API_URL/stocks/600519.SH/financial?period=latest" \
   -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
 ```
 
+U.S. example:
+
+```bash
+curl "$STOCKPILLAR_API_URL/stocks/AAPL.US/financial?period=4&period_type=ANNUAL" \
+  -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
+```
+
 Response guidance:
 
 - start with the reporting period
 - list the 3 to 6 metrics most relevant to the question
 - separate valuation from profitability and growth
+- for U.S. `.US`, cite `source=sec_companyfacts` and distinguish `income`, `balancesheet`, `cashflow`, and `indicators` sections
 - if the user asks whether it is `高` or `低`, frame it as relative and data-based, not absolute judgment
 
 ### `/stocks/{ts_code}/balancesheet`

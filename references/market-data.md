@@ -4,7 +4,8 @@
 
 Follow this shortcut before reading endpoint details:
 
-- "现在 / 当前 / 最新 / 实时行情 / 盘中价格" -> `/prices/realtime`.
+- "现在 / 当前 / 最新 / 实时行情 / 盘中价格" -> `/prices/realtime` for A-share, HK, and U.S. realtime quotes.
+- "分钟线 / 分时K / 1分钟K线 / 1m bar" -> `/stocks/{ts_code}/prices/minute` for A-share, HK, and U.S. 1m minute bars.
 - "个股主力资金 / 个股净流入 / 个股资金趋势" -> `/stocks/{ts_code}/moneyflow`.
 - "北向资金 / 沪深港通资金流 / 外资今天买卖" -> `/moneyflow/hsgt` or `/moneyflow/hsgt/overview`.
 - "北向持仓 / 港股通持股比例 / 外资持股量" -> `/stocks/{ts_code}/flows/hk-hold`.
@@ -103,10 +104,12 @@ Use when:
 
 - the user asks `现在`, `当前`, `最新`, `盘中`, or `实时行情`
 - the user wants latest price, intraday change, bid/ask, or turnover
+- the user asks for Hong Kong or U.S. stock realtime quotes supported by StockPillar's Futu OpenD integration
 
 Do not use when:
 
-- the user wants historical走势 or K-line
+- the user wants minute bars; use `/stocks/{ts_code}/prices/minute`
+- the user wants historical daily走势 or daily K-line
 - the user wants a technical signal event
 
 Example user asks:
@@ -114,6 +117,7 @@ Example user asks:
 - `现在贵州茅台多少钱`
 - `帮我看 600519.SH 的实时行情`
 - `比较一下茅台和五粮液当前涨跌`
+- `看一下腾讯控股和苹果现在多少钱`
 
 Required params:
 
@@ -126,7 +130,7 @@ Optional params:
 Request:
 
 ```bash
-curl "$STOCKPILLAR_API_URL/prices/realtime?ts_codes=600519.SH,000858.SZ" \
+curl "$STOCKPILLAR_API_URL/prices/realtime?ts_codes=600519.SH,00700.HK,AAPL.US" \
   -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
 ```
 
@@ -136,7 +140,81 @@ Response guidance:
 - if `pct_chg` is absent, compute it from `price` and `pre_close`
 - use `trade_time` as the practical timestamp when `update_time` is absent
 - for multiple securities, present them side by side
+- for HK/US rows, expect `source=futu_opend`, `market`, and `futu_code`; `00700.HK` and `HK.00700` are both valid inputs for Tencent, and HK symbols are zero-padded to five digits
+- do not use this endpoint to answer minute bars or daily K-line; use `/stocks/{ts_code}/prices/minute` for same-day 1m bars and `/stocks/{ts_code}/prices/kline` for historical daily K-line
 - do not describe realtime data as end-of-day confirmed close
+
+### `/stocks/{ts_code}/prices/minute`
+
+Use when:
+
+- the user asks for `分钟线`, `分时K`, `1分钟K线`, `1m bar`, or intraday minute bars for one stock
+- the user wants same-day intraday OHLCV bars rather than a snapshot quote
+- the user asks for HK/US minute bars supported by StockPillar's Futu OpenD integration
+
+Do not use when:
+
+- the user only wants current/latest price; use `/prices/realtime`
+- the user wants daily K-line or a multi-day historical price window; use `/stocks/{ts_code}/prices/kline`
+
+Example user asks:
+
+- `给我 600519.SH 今天的 1 分钟线`
+- `看一下腾讯控股 20260617 的分钟线`
+- `AAPL.US 今天盘中 1m K 线`
+
+Required params:
+
+- path `ts_code`
+- query `trade_date` in `YYYYMMDD`
+
+Optional params:
+
+- `freq`: only `1m`; omit it unless the user explicitly asks and still use `1m`
+
+Request:
+
+```bash
+curl "$STOCKPILLAR_API_URL/stocks/00700.HK/prices/minute?trade_date=20260617&freq=1m" \
+  -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
+```
+
+Response guidance:
+
+- A-share same-day rows come from QMT cache and usually include `source=qmt_1m`
+- HK/US rows come from Futu OpenD and include `source=futu_opend`, `market`, `futu_code`, and `freq=1m`
+- rows are minute OHLCV bars with `trade_time`, `open`, `high`, `low`, `close`, `volume`, and `amount`
+- an empty `data` list means no cached or provider-returned bars for that stock/date, not that the stock did not trade
+- do not promise non-1m frequencies or historical minute bars from this route
+
+### `/stocks/{ts_code}/prices/kline`
+
+Use when:
+
+- the user asks for historical daily K-line, 日线, K线, 走势, or a date-range price window
+- the user asks for HK/US historical daily prices such as `00700.HK`, `HK.00700`, `AAPL.US`, or `US.AAPL`
+
+Required params:
+
+- path `ts_code`
+- query `start_date` and `end_date` in `YYYYMMDD`
+
+Optional params:
+
+- `limit` for HK/US rows; use only when you need to cap the response
+
+Request:
+
+```bash
+curl "$STOCKPILLAR_API_URL/stocks/AAPL.US/prices/kline?start_date=20260101&end_date=20260131" \
+  -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
+```
+
+Response guidance:
+
+- HK/US daily rows are ODS raw daily bars with `freq=1d`, `market`, `currency`, `adjust=none`, and source such as `polygon_grouped`, `tushare_hk`, or `yahoo_hk`
+- summarize the date range, row count, latest close, interval change, high, and low
+- do not use this route for minute bars or realtime quotes
 
 ### `/stocks/{ts_code}/moneyflow`
 

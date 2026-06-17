@@ -8,8 +8,9 @@ Map user requests to endpoints with the smallest sufficient call set.
 
 Follow these shortcuts before scanning the detailed mapping:
 
-- "现在 / 当前 / 实时 / 盘中价格" -> `GET /prices/realtime`
-- "走势 / K线 / 区间涨跌 / 历史价格" -> `GET /stocks/{ts_code}/prices/kline`
+- "现在 / 当前 / 实时 / 盘中价格" -> `GET /prices/realtime`; supports A-share plus HK/US realtime quote codes.
+- "分钟线 / 分时K / 1分钟K线 / 1m bar" -> `GET /stocks/{ts_code}/prices/minute`; supports A-share plus HK/US 1m minute bars.
+- "走势 / K线 / 区间涨跌 / 历史价格" -> `GET /stocks/{ts_code}/prices/kline`; supports A-share plus HK/US daily K-line.
 - "MA / MACD / RSI / KDJ / BOLL 数值" -> `GET /stocks/{ts_code}/technical/indicators`
 - "有没有金叉 / 死叉 / 超买 / 超卖 / 技术异动" -> `GET /stocks/{ts_code}/technical/alerts`
 - "全市场扫描 / 哪些股票出现信号" -> `GET /technical/radar`
@@ -67,8 +68,9 @@ Follow these shortcuts before scanning the detailed mapping:
 - 自选股列表 -> `GET /watchlist`: Use for the token owner's watchlist. Optional `limit`.
 - 添加自选股 -> `POST /watchlist/{ts_code}`: Use only when the user explicitly asks to add/follow a stock.
 - 删除自选股 -> `DELETE /watchlist/{ts_code}`: Use only when the user explicitly asks to remove/unfollow a stock.
-- 历史走势 / K线 -> `GET /stocks/{ts_code}/prices/kline`: Canonical single-stock K-line path; requires `start_date` and `end_date`.
-- 实时行情 -> `GET /prices/realtime?ts_codes=...`: Always use `ts_codes`, even for one stock.
+- 分钟线 / 分时K / 1分钟K线 -> `GET /stocks/{ts_code}/prices/minute`: Canonical single-stock same-day 1m minute-bar path; requires `trade_date`, optional `freq=1m`. A-share uses QMT cache, HK/US uses Futu OpenD, and historical minute bars are not skill-visible.
+- 历史走势 / 日K / 日线K线 -> `GET /stocks/{ts_code}/prices/kline`: Canonical single-stock daily K-line path; requires `start_date` and `end_date`; supports A-share, HK, and U.S. stocks.
+- 实时行情 -> `GET /prices/realtime?ts_codes=...`: Always use `ts_codes`, even for one stock. This endpoint supports A-share codes plus HK/US realtime quote codes such as `00700.HK`, `HK.00700`, `AAPL.US`, or `US.AAPL`.
 - 技术指标数值 -> `GET /stocks/{ts_code}/technical/indicators`: Canonical single-stock indicator path; use grouped indicator families such as MA, EMA, MACD, RSI, KDJ, BOLL, and VOL_MA.
 - 技术异动信号 -> `GET /stocks/{ts_code}/technical/alerts`: Canonical single-stock alert path; use for gold cross, oversold, breakout, and similar signals.
 - 涨跌停价格 / 涨停价 / 跌停价 -> `GET /stocks/{ts_code}/prices/limits`: Use for trading constraint checks and limit-up or limit-down price facts.
@@ -162,7 +164,9 @@ Normalize before constructing the request.
 ### Stock Codes
 
 - A-share stocks must include exchange suffix: `600519.SH`, `000001.SZ`, `830946.BJ`.
+- HK/US stocks support `GET /prices/realtime`, `GET /stocks/{ts_code}/prices/minute` for same-day 1m bars, and `GET /stocks/{ts_code}/prices/kline` for historical daily K-line. U.S. `.US` stocks also support SEC-derived `/financial`, `/income`, `/balancesheet`, and `/cashflow`. Use suffix form (`00700.HK`, `AAPL.US`) by default, or accept Futu prefix form (`HK.00700`, `US.AAPL`) when the user provides it.
 - If the user gives only a six-digit code and the exchange is obvious from prior context, infer cautiously.
+- If the user gives a Hong Kong numeric code without a market suffix, do not guess silently unless prior context makes `.HK` clear; Hong Kong codes are zero-padded to five digits by the backend for realtime quotes.
 - If the code is ambiguous or you cannot resolve it confidently, ask.
 - `GET /stocks/{ts_code}` and `GET /stocks/batch` return a normalized `tier` field derived from the stock's `industry`.
 
@@ -185,8 +189,10 @@ Defaults:
 - `/stocks/{ts_code}/events/holder-trades`, `/stocks/{ts_code}/events/repurchases`, `/stocks/{ts_code}/ownership/holder-numbers`, `/stocks/{ts_code}/ownership/top10-holders`, `/stocks/{ts_code}/ownership/top10-floatholders`, and `/stocks/{ts_code}/pledges/detail` use `ann_date` for an exact disclosure date; `trade_date` is accepted as an alias when the user just says "当天公告".
 - `/stocks/{ts_code}/pledges/stat` uses `trade_date` as the exact snapshot-date alias for `end_date`; for ranges, use `start_date` and `end_date`.
 - `/stocks/{ts_code}/prices/limits`, `/stocks/{ts_code}/events/suspend`, `/stocks/{ts_code}/flows/hk-hold`, `/stocks/{ts_code}/technical/cyq-perf`, `/stocks/{ts_code}/technical/cyq-chips`, `/stocks/{ts_code}/events/limit-list`, `/stocks/{ts_code}/flows/slb-sec-detail`, and `/concepts/{ts_code}/moneyflow/ths` accept `trade_date` for an exact day or `start_date`/`end_date` for a range.
+- `/stocks/{ts_code}/prices/minute` requires exact `trade_date`; do not use `start_date`/`end_date` for this endpoint.
 - If user asks "recent", "最近", or "近期" without a range:
   - technical indicators: default to last 60 calendar days
+  - minute bars: ask for or infer a specific `trade_date`; prefer today only when the user asks for today's intraday/minute data
   - K-line: default to last 30 calendar days
   - shareholder trade, block trade, repurchase, pledge detail, and ownership overview event lists: default to last 180 calendar days
   - holder-number, top10 holders, top10 float holders, and pledge stat snapshots: default to latest available rows when no explicit range is given

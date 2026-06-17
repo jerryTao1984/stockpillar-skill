@@ -19,8 +19,9 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /stocks/filters`: Auth `Bearer token`; required params `none`; use for stock pool filter options such as industries, tiers, and themes.
 - `GET /stocks/{ts_code}`: Auth `Bearer token`; required params path `ts_code`; use for single-stock basic info with derived `tier`.
 - `GET /stocks/batch`: Auth `Bearer token`; required params `ts_codes`; use for batch basic info lookup.
-- `GET /stocks/{ts_code}/prices/kline`: Auth `Bearer token`; required params path `ts_code`, `start_date`, `end_date`; use for a single-stock K-line window.
-- `GET /prices/realtime`: Auth `Bearer token`; required params `ts_codes`; use for one or more realtime quotes.
+- `GET /stocks/{ts_code}/prices/kline`: Auth `Bearer token`; required params path `ts_code`, `start_date`, `end_date`; optional `limit` for HK/US; use for a single-stock daily K-line window. A-share reads the A-share market-data service; HK/US reads ODS daily K-line and accepts suffix or Futu prefix code forms.
+- `GET /prices/realtime`: Auth `Bearer token`; required params `ts_codes`; use for one or more realtime quotes. A-share codes use `600519.SH`/`000001.SZ`; Hong Kong and U.S. codes may use either StockPillar suffix form (`00700.HK`, `AAPL.US`) or Futu prefix form (`HK.00700`, `US.AAPL`). HK/US rows are read live from Futu OpenD when available and include `source=futu_opend`.
+- `GET /stocks/{ts_code}/prices/minute`: Auth `Bearer token`; required params path `ts_code`, query `trade_date`; optional query `freq` (only `1m`); use for same-day 1m minute bars. A-share rows use QMT cache; HK/US rows use Futu OpenD and accept suffix or Futu prefix code forms. Historical minute bars are not skill-visible.
 - `GET /stocks/{ts_code}/technical/indicators`: Auth `Bearer token`; required params path `ts_code`; use for numeric indicator values such as MA, MACD, RSI, KDJ, and BOLL.
 - `GET /stocks/{ts_code}/technical/alerts`: Auth `Bearer token`; required params path `ts_code`; use for single-stock signal events such as crossovers or oversold alerts.
 - `GET /stocks/{ts_code}/technical/factor-pro`: Auth `Bearer token`; required params path `ts_code`; use for stock technical factor pro rows by trade date or date range.
@@ -54,7 +55,7 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `GET /margin/summary`: Auth `Bearer token`; required params `none`; use for an exchange-level margin snapshot or date range.
 - `GET /margin/detail`: Auth `Bearer token`; required params `none`; use for stock-level margin detail rows.
 - `GET /stocks/{ts_code}/margin`: Auth `Bearer token`; required params path `ts_code`; use for canonical single-stock margin detail.
-- `GET /stocks/{ts_code}/financial`: Auth `Bearer token`; required params path `ts_code`; use for a compact financial metrics snapshot.
+- `GET /stocks/{ts_code}/financial`: Auth `Bearer token`; required params path `ts_code`; use for a compact financial metrics snapshot. A-share reads Tushare financial metrics; U.S. `.US` reads SEC-derived financial summary sections.
 - `GET /toplist`: Auth `Bearer token`; required params `none`; use for a market-wide toplist snapshot or one-day list.
 - `GET /stocks/{ts_code}/toplist`: Auth `Bearer token`; required params path `ts_code`; use for one stock's toplist records.
 - `GET /stocks/{ts_code}/top-list-seat-chain`: Auth `Bearer token`; required params path `ts_code`; use for one stock's toplist seat-chain analysis.
@@ -104,9 +105,9 @@ Use this as the authoritative one-to-one route index for `src/web/skill_api.py`.
 - `POST /stocks/{ts_code}/analysis/report`: Auth `Bearer token`; required params path `ts_code`; use to generate an AI valuation report and shareable HTML.
 - `GET /valuation`: Auth `Bearer token`; required params `none`; use for the valuation report list with optional `industry`, `tab`, `page`, and `limit`. Response uses `data.records`. Rows include narrative-risk-anchor fields: `narrative_implied_growth` (market-implied growth from reverse DCF), `narrative_delivering` (兑现中/已低于隐含/无法判定), `narrative_cash_quality` (优/中/差/未知), `narrative_mechanical_risk` (1 = decelerating-below-implied or weak cash; the model never flags on growth level itself).
 - `GET /valuation/{ts_code}`: Auth `Bearer token`; required params path `ts_code`; use for a single stock's latest valuation report detail. The detail `report` includes the same `narrative_*` fields; full narrative breakdown (reasons, hist_cagr) is inside `data_json.narrative_risk`.
-- `GET /stocks/{ts_code}/balancesheet`: Auth `Bearer token`; required params path `ts_code`; use for raw balance-sheet statement rows.
-- `GET /stocks/{ts_code}/cashflow`: Auth `Bearer token`; required params path `ts_code`; use for raw cash-flow statement rows.
-- `GET /stocks/{ts_code}/income`: Auth `Bearer token`; required params path `ts_code`; use for raw income-statement rows.
+- `GET /stocks/{ts_code}/balancesheet`: Auth `Bearer token`; required params path `ts_code`; use for raw balance-sheet statement rows. U.S. `.US` reads SEC-derived wide balance-sheet rows.
+- `GET /stocks/{ts_code}/cashflow`: Auth `Bearer token`; required params path `ts_code`; use for raw cash-flow statement rows. U.S. `.US` reads SEC-derived wide cash-flow rows.
+- `GET /stocks/{ts_code}/income`: Auth `Bearer token`; required params path `ts_code`; use for raw income-statement rows. U.S. `.US` reads SEC-derived wide income rows.
 - `GET /stocks/{ts_code}/express`: Auth `Bearer token`; required params path `ts_code`; use for earnings-express rows.
 - `GET /health`: Auth `No auth`; required params `none`; use only for a lightweight service liveness check.
 
@@ -128,7 +129,8 @@ Use these rules before reading endpoint-specific details:
 - One-stock signal detection such as gold cross, dead cross, overbought, oversold -> `GET /stocks/{ts_code}/technical/alerts`.
 - Market-wide signal scan -> `GET /technical/radar`.
 - Current/latest/intraday price -> `GET /prices/realtime`.
-- Historical price structure or K-line window -> `GET /stocks/{ts_code}/prices/kline`.
+- Intraday minute bars for a specific trade day -> `GET /stocks/{ts_code}/prices/minute`.
+- Historical daily price structure or K-line window -> `GET /stocks/{ts_code}/prices/kline`.
 - One-stock money movement -> `GET /stocks/{ts_code}/moneyflow`.
 - Northbound/southbound aggregate money movement -> `GET /moneyflow/hsgt` or `/moneyflow/hsgt/overview`.
 - Stock-level HSGT ownership or holding ratio -> `GET /stocks/{ts_code}/flows/hk-hold`.

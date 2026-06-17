@@ -111,6 +111,14 @@ class StockPillarTester:
             params={"start_date": start_date, "end_date": end_date},
         )
 
+    def minute(self):
+        trade_date = datetime.now().strftime("%Y%m%d")
+        return self._get(
+            f"GET /stocks/{self.ts_code}/prices/minute",
+            f"/stocks/{self.ts_code}/prices/minute",
+            params={"trade_date": trade_date, "freq": "1m"},
+        )
+
     def technical_indicators(self, days: int = 60):
         end_date = datetime.now().strftime("%Y%m%d")
         start_date = (datetime.now() - timedelta(days=days)).strftime("%Y%m%d")
@@ -201,6 +209,7 @@ class StockPillarTester:
             self.stock_basic,
             self.stocks_batch,
             self.realtime,
+            self.minute,
             self.kline,
             self.technical_indicators,
             self.technical_alerts,
@@ -244,7 +253,7 @@ def main():
     parser.add_argument(
         "--only",
         help="Run a single endpoint family. Choices: health, basic, batch, realtime, kline, "
-             "indicators, alerts, radar, moneyflow, hsgt, financial, toplist, top20, macro, "
+             "minute, indicators, alerts, radar, moneyflow, hsgt, financial, toplist, top20, macro, "
              "market_summary, market_pulse, industries, screen, positions",
     )
     args = parser.parse_args()
@@ -266,6 +275,7 @@ def main():
             "basic": tester.stock_basic,
             "batch": tester.stocks_batch,
             "realtime": tester.realtime,
+            "minute": tester.minute,
             "kline": tester.kline,
             "indicators": tester.technical_indicators,
             "alerts": tester.technical_alerts,

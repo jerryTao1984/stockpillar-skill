@@ -8,7 +8,8 @@ Follow this shortcut before reading the detailed rules:
 - User asks "有没有金叉/死叉/超买/超卖/技术异动" for one stock -> `/stocks/{ts_code}/technical/alerts`.
 - User asks "今天哪些股票出现信号/全市场扫描" -> `/technical/radar`.
 - User asks for stored professional factor rows or explicitly says `factor_pro` -> `/stocks/{ts_code}/technical/factor-pro` or `/indices/{ts_code}/technical/factor-pro`.
-- User asks for price走势, K线, 区间涨跌 -> `/stocks/{ts_code}/prices/kline`.
+- User asks for minute bars, 分钟线, 分时K, or 1m bars -> `/stocks/{ts_code}/prices/minute`.
+- User asks for daily price走势, daily K线, 区间涨跌 -> `/stocks/{ts_code}/prices/kline`.
 - User asks for conditional stock selection -> `/screen/stocks`.
 
 ## `/stocks/{ts_code}/technical/indicators` Guide
@@ -352,6 +353,44 @@ Response guidance:
 - report only fields returned by the API; do not infer indicator values that are absent
 - if the user did not explicitly ask for factor-pro, prefer the simpler indicator or K-line endpoints
 
+### `/stocks/{ts_code}/prices/minute`
+
+Use for same-day intraday 1m minute bars. A-share rows use QMT cache and HK/US rows use Futu OpenD. This is price-bar data, not a technical signal endpoint.
+
+Use when:
+
+- the user asks for `分钟线`, `分时K`, `1分钟K线`, or `1m bar`
+- the user wants intraday OHLCV bars for a specific `trade_date`
+- the user asks for HK/US minute bars such as `00700.HK`, `HK.00700`, `AAPL.US`, or `US.AAPL`
+
+Do not use when:
+
+- the user asks for current/latest price only; use `/prices/realtime`
+- the user asks for daily K-line or a date-range daily trend; use `/stocks/{ts_code}/prices/kline`
+- the user asks for technical indicators or signals; use the indicator or alert endpoints
+
+Required params:
+
+- path `ts_code`
+- query `trade_date`
+
+Optional params:
+
+- `freq=1m` only
+
+Request:
+
+```bash
+curl "$STOCKPILLAR_API_URL/stocks/AAPL.US/prices/minute?trade_date=20260617&freq=1m" \
+  -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
+```
+
+Response guidance:
+
+- summarize `trade_date`, row count, first/last `trade_time`, latest `close`, and intraday high/low
+- state `source` when comparing A-share and HK/US bars (`qmt_1m` vs `futu_opend`)
+- do not promise non-1m frequencies or historical minute bars
+
 ### `/stocks/{ts_code}/prices/kline`
 
 Use for historical走势 and price structure. If the user asks for `股价走势` or `K线`, do not substitute technical indicators unless they explicitly ask for them.
@@ -360,6 +399,7 @@ Use when:
 
 - the user asks for recent走势, 区间涨跌, highest/lowest, or K-line data
 - the user wants date-range price history
+- the user asks for HK/US daily K-line such as `00700.HK`, `HK.00700`, `AAPL.US`, or `US.AAPL`
 - the user asks for moving averages such as `MA5`, `MA20`, or `MA60` and backend MA fields are not explicitly verified
 
 Do not use when:
@@ -383,6 +423,7 @@ Optional params:
 
 - `page`
 - `size`
+- `limit` for HK/US daily K-line responses
 
 Notes:
 
@@ -400,6 +441,7 @@ Response guidance:
 
 - first give the date range
 - then summarize latest close, interval change, high, and low
+- for HK/US daily K-line, expect `market`, `currency`, `adjust=none`, `freq=1d`, and source such as `polygon_grouped`, `tushare_hk`, or `yahoo_hk`
 - if the user asked for moving averages, state they were derived from K-line closes
 - mention volume or turnover only if it adds value
 - if the user wants chart interpretation, say it is price-based rather than signal-based

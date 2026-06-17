@@ -1,14 +1,15 @@
 # StockPillar Skill for OpenClaw
 
-让 OpenClaw 通过自然语言调用 [StockPillar](https://stockpillar.layercake18.com) 的 A 股
-量化数据 API，覆盖行情、技术指标、资金流、股东结构、质押回购、财务、行业事件、
-版本化主题股票池、AI 供应链图谱、组合持仓等 90+ 个端点。
+让 OpenClaw 通过自然语言调用 [StockPillar](https://stockpillar.layercake18.com) 的量化数据
+API，覆盖 A 股行情、技术指标、资金流、股东结构、质押回购、财务、行业事件、版本化主题
+股票池、AI 供应链图谱、组合持仓，以及港股/美股实时行情等 90+ 个端点。
 
 ## 功能预览
 
 装上之后，你可以直接用中文问 OpenClaw：
 
 - "现在贵州茅台多少钱？"
+- "腾讯控股和苹果现在多少钱？"
 - "查 600519.SH 最近 60 天的 MA、MACD、RSI、KDJ"
 - "今天有哪些股票出现了 MACD 金叉？"
 - "筛选 ROE>15% 且 PE<20 的股票"
@@ -78,7 +79,7 @@ python3 scripts/test_api.py
 ## 安全说明
 
 - 交易类 POST（`/positions` 买入、`/positions/{id}/sell` 卖出）必须经过用户在对话中显式
-  确认才会执行。"买点茅台" 这种模糊表达不算确认，Claude 会反问数量、成本价等参数。
+  确认才会执行。"买点茅台" 这种模糊表达不算确认，agent 会反问数量、成本价等参数。
 - Skill 不暴露任何供应链 mutation / 维护类端点，相关操作请通过 StockPillar Web 后台。
 - API Key 必须放在环境变量里，**不要**写到 skill 配置文件或 git 仓库中。
 
@@ -107,7 +108,7 @@ stockpillar-skill/
 ## 反馈与贡献
 
 - 发现 API 路径过期、参数变更：在本仓库提 issue
-- 端点描述不准确、Claude 路由偏差：附上你的提问原文 + Claude 实际调用的端点
+- 端点描述不准确、agent 路由偏差：附上你的提问原文 + 实际调用的端点
 - 新增 StockPillar 后端端点：同步更新 [references/route-index.md](references/route-index.md)
   和对应专题 reference；版本化主题股票池要更新
   [references/theme-stock-pools.md](references/theme-stock-pools.md)，不要混进
