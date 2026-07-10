@@ -1,7 +1,7 @@
 ---
 name: stockpillar-skill
-description: Use this skill when the user asks about A-share stocks, HK/US realtime quotes, HK/US historical daily K-line, U.S. SEC financials, technical indicators, market data, capital flow, shareholder structure, pledge or repurchase data, financial metrics, stock screening, valuation-style reports, portfolio actions, industry/theme events, versioned theme stock pools, or AI supply-chain graph data from the StockPillar API.
-version: 2.3.0
+description: Use this skill when the user asks about A-share stocks, same-day A-share tick or call-auction replay, HK/US realtime quotes, HK/US historical K-line, U.S. SEC financials, technical indicators, market data, capital flow, shareholder structure, pledge or repurchase data, financial metrics, stock screening, valuation-style reports, portfolio actions, industry/theme events, versioned theme stock pools, or AI supply-chain graph data from the StockPillar API.
+version: 2.4.0
 metadata:
   openclaw:
     requires:
@@ -13,7 +13,7 @@ metadata:
     envVars:
       - name: STOCKPILLAR_API_KEY
         required: true
-        description: StockPillar API token. Sent as the `Authorization: Bearer` header.
+        description: "StockPillar API token. Sent as the Authorization: Bearer header."
       - name: STOCKPILLAR_API_URL
         required: false
         description: API base URL. Defaults to https://stockpillar.layercake18.com/api/skill/v1
@@ -69,7 +69,7 @@ method names, or placeholder names.
 
 Use this skill when the user asks for StockPillar data or actions, including:
 
-- A-share stock basic info, realtime quotes, minute bars, K-line, technical indicators, technical signals
+- A-share stock basic info, realtime quotes, same-day tick/call-auction replay, minute bars, K-line, technical indicators, technical signals
 - HK/US realtime quotes, same-day 1m minute bars, and historical daily K-line
 - U.S. SEC-derived financial summary, income statement, balance sheet, and cash flow
 - money flow, northbound/southbound flow, margin data, toplist, macro, market summary

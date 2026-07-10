@@ -151,6 +151,8 @@ These pagination fields are inside `data`, not top-level response keys.
   - `total_fee_cost` means realized buy commission plus estimated sell-side commission and stamp tax on current holdings
   - `total_value` means estimated net liquidation value after current sell-side costs
   - `total_value` is the portfolio-level aggregate of per-position net values; do not confuse it with one position's `market_value`
+- PnL cost-basis caveat: the backend currently calculates current holdings from the system's stored position cost / lot-style records. MiniQMT broker screens may show a different cost basis, especially after partial sells or same-symbol T trades, because broker cost can include realized loss/profit allocation into the remaining position. When the user asks why QMT loss is larger than our lot calculation, do not treat it as a formula bug by default; explain that the denominator/cost basis differs and recommend reconciling the complete trade ledger.
+- Follow-up needed: build a reconciliation report for selected symbols that compares (1) system remaining-lot cost, (2) weighted-average current holding cost, and (3) MiniQMT/broker diluted cost inferred from `market_value + profit_loss`, using full buy/sell executions and fees.
 
 ### Agent Output Guidance
 

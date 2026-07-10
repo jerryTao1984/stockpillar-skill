@@ -68,7 +68,8 @@ Follow these shortcuts before scanning the detailed mapping:
 - 自选股列表 -> `GET /watchlist`: Use for the token owner's watchlist. Optional `limit`.
 - 添加自选股 -> `POST /watchlist/{ts_code}`: Use only when the user explicitly asks to add/follow a stock.
 - 删除自选股 -> `DELETE /watchlist/{ts_code}`: Use only when the user explicitly asks to remove/unfollow a stock.
-- 分钟线 / 分时K / 1分钟K线 -> `GET /stocks/{ts_code}/prices/minute`: Canonical single-stock same-day 1m minute-bar path; requires `trade_date`, optional `freq=1m`. A-share queries QMT Bridge live, HK/US uses Futu OpenD, and historical minute bars are not skill-visible.
+- 分钟线 / 分时K / 1分钟K线 -> `GET /stocks/{ts_code}/prices/minute`: Canonical single-stock same-day 1m minute-bar path; requires `trade_date`, optional `freq=1m`. A-share and HK/US rows are served through StockPillar backend channels; HK/US historical minute bars use `/stocks/{ts_code}/prices/kline?freq=1m|5m|60m`.
+- 当日 tick / 集合竞价回放 / 盘前五档变化 -> `GET /stocks/{ts_code}/prices/ticks`: A-share-only current-day tick history; requires `trade_date`, defaults to `start_time=091500&end_time=092500`, and allows at most a 30-minute window. This reads QMT directly, not OSS.
 - 历史走势 / 日K / 日线K线 -> `GET /stocks/{ts_code}/prices/kline`: Canonical single-stock daily K-line path; requires `start_date` and `end_date`; supports A-share, HK, and U.S. stocks.
 - 实时行情 -> `GET /prices/realtime?ts_codes=...`: Always use `ts_codes`, even for one stock. This endpoint supports A-share codes plus HK/US realtime quote codes such as `00700.HK`, `HK.00700`, `AAPL.US`, or `US.AAPL`.
 - 技术指标数值 -> `GET /stocks/{ts_code}/technical/indicators`: Canonical single-stock indicator path; use grouped indicator families such as MA, EMA, MACD, RSI, KDJ, BOLL, and VOL_MA.
@@ -164,7 +165,7 @@ Normalize before constructing the request.
 ### Stock Codes
 
 - A-share stocks must include exchange suffix: `600519.SH`, `000001.SZ`, `830946.BJ`.
-- HK/US stocks support `GET /prices/realtime`, `GET /stocks/{ts_code}/prices/minute` for same-day 1m bars, and `GET /stocks/{ts_code}/prices/kline` for historical daily K-line. U.S. `.US` stocks also support SEC-derived `/financial`, `/income`, `/balancesheet`, and `/cashflow`. Use suffix form (`00700.HK`, `AAPL.US`) by default, or accept Futu prefix form (`HK.00700`, `US.AAPL`) when the user provides it.
+- HK/US stocks support `GET /prices/realtime`, `GET /stocks/{ts_code}/prices/minute` for same-day 1m bars, and `GET /stocks/{ts_code}/prices/kline` for historical daily/weekly/monthly/minute K-line where supported. U.S. `.US` stocks also support SEC-derived `/financial`, `/income`, `/balancesheet`, and `/cashflow`. Use suffix form (`00700.HK`, `AAPL.US`) by default, or accept market-prefix form (`HK.00700`, `US.AAPL`) when the user provides it.
 - If the user gives only a six-digit code and the exchange is obvious from prior context, infer cautiously.
 - If the user gives a Hong Kong numeric code without a market suffix, do not guess silently unless prior context makes `.HK` clear; Hong Kong codes are zero-padded to five digits by the backend for realtime quotes.
 - If the code is ambiguous or you cannot resolve it confidently, ask.

@@ -104,7 +104,7 @@ Use when:
 
 - the user asks `现在`, `当前`, `最新`, `盘中`, or `实时行情`
 - the user wants latest price, intraday change, bid/ask, or turnover
-- the user asks for Hong Kong or U.S. stock realtime quotes supported by StockPillar's Futu OpenD integration
+- the user asks for Hong Kong or U.S. stock realtime quotes supported by StockPillar's server-side HK/US realtime channel
 
 Do not use when:
 
@@ -140,9 +140,53 @@ Response guidance:
 - if `pct_chg` is absent, compute it from `price` and `pre_close`
 - use `trade_time` as the practical timestamp when `update_time` is absent
 - for multiple securities, present them side by side
-- for HK/US rows, expect `source=futu_opend`, `market`, and `futu_code`; `00700.HK` and `HK.00700` are both valid inputs for Tencent, and HK symbols are zero-padded to five digits
+- A-share QMT rows preserve every `get_full_tick` field using snake_case: `time_ms`, `time_tag`, `last_price`, OHLC/pre-close, amount, `volume`, `pvolume`, status/open-interest/settlement fields, and complete `ask_price`/`ask_vol`/`bid_price`/`bid_vol` arrays; `price`, `bid`, and `ask` remain compatibility aliases
+- for HK/US rows, expect `market` and provider/source metadata when present, but do not depend on provider names; `00700.HK` and `HK.00700` are both valid inputs for Tencent, and HK symbols are zero-padded to five digits
 - do not use this endpoint to answer minute bars or daily K-line; use `/stocks/{ts_code}/prices/minute` for same-day 1m bars and `/stocks/{ts_code}/prices/kline` for historical daily K-line
 - do not describe realtime data as end-of-day confirmed close
+
+### `/stocks/{ts_code}/prices/ticks`
+
+Use when:
+
+- the user asks to replay today's `tick`, `集合竞价`, `盘前盘口`, or five-level order-book changes
+- the user wants one A-share's earlier tick snapshots during the same trading day
+- the user asks at noon or in the afternoon for the `09:15–09:25` call-auction sequence
+
+Do not use when:
+
+- the user wants only the latest snapshot; use `/prices/realtime`
+- the user wants 1-minute OHLCV bars; use `/stocks/{ts_code}/prices/minute`
+- the user wants a previous trading day; this endpoint is current-day only
+- the user asks for Level-2 thousand-level quotes or order-by-order data; this endpoint is Level-1 only
+
+Required params:
+
+- path `ts_code`: one A-share with `.SH`, `.SZ`, or `.BJ`
+- query `trade_date`: current day in `YYYYMMDD`
+
+Optional params:
+
+- `start_time`: `HHMMSS` or `HH:MM:SS`; default `091500`
+- `end_time`: `HHMMSS` or `HH:MM:SS`; default `092500`
+- the inclusive window may not exceed 30 minutes
+
+Request:
+
+```bash
+curl "$STOCKPILLAR_API_URL/stocks/300308.SZ/prices/ticks?trade_date=20260710&start_time=091500&end_time=092500" \
+  -H "Authorization: Bearer $STOCKPILLAR_API_KEY" | jq '.'
+```
+
+Response guidance:
+
+- rows are queried directly from QMT's current-day tick store; this route does not read OSS
+- use `time_tag` to order the replay and report the requested window explicitly
+- price/volume fields include `last_price`, OHLC/pre-close, cumulative amount/volume, and QMT status fields
+- five-level arrays are `bid_price`, `bid_vol`, `ask_price`, and `ask_vol`
+- `tick_volume` and `transaction_num` are included when QMT provides them
+- an empty `data` list means QMT returned no rows for that stock/window
+- do not infer account ownership, hidden liquidity, thousand-level depth, or individual orders from L1 snapshots
 
 ### `/stocks/{ts_code}/prices/minute`
 
@@ -150,7 +194,7 @@ Use when:
 
 - the user asks for `分钟线`, `分时K`, `1分钟K线`, `1m bar`, or intraday minute bars for one stock
 - the user wants same-day intraday OHLCV bars rather than a snapshot quote
-- the user asks for HK/US minute bars supported by StockPillar's Futu OpenD integration
+- the user asks for HK/US minute bars supported by StockPillar's server-side HK/US minute-bar channel
 
 Do not use when:
 
@@ -182,7 +226,7 @@ curl "$STOCKPILLAR_API_URL/stocks/00700.HK/prices/minute?trade_date=20260617&fre
 Response guidance:
 
 - A-share same-day rows are queried live from QMT Bridge `/market/minute` and usually include `source=qmt_1m`
-- HK/US rows come from Futu OpenD and include `source=futu_opend`, `market`, `futu_code`, and `freq=1m`
+- HK/US rows come from StockPillar's server-side HK/US minute-bar channel and include `freq=1m`; provider/source metadata is internal
 - rows are minute OHLCV bars with `trade_time`, `open`, `high`, `low`, `close`, `volume`, and `amount`
 - an empty `data` list means no cached or provider-returned bars for that stock/date, not that the stock did not trade
 - use `/stocks/{ts_code}/prices/kline?freq=1m|5m|60m` for HK/US historical minute bars
@@ -203,8 +247,8 @@ Required params:
 Optional params:
 
 - `limit` for HK/US rows; use only when you need to cap the response
-- `freq` for HK/US via Futu OpenD: `day`, `week`, `month`, `1m`, `5m`, or `60m`; omit `freq` for the legacy stored daily K-line path
-- `adjust` for HK/US Futu history: `qfq`, `hfq`, or `none`; default `qfq`
+- `freq` for HK/US server-side history: `day`, `week`, `month`, `1m`, `5m`, or `60m`; omit `freq` for the legacy stored daily K-line path
+- `adjust` for HK/US history: `qfq`, `hfq`, or `none`; default `qfq`
 
 Request:
 
@@ -216,7 +260,7 @@ curl "$STOCKPILLAR_API_URL/stocks/AAPL.US/prices/kline?start_date=20260101&end_d
 Response guidance:
 
 - HK/US requests without `freq` return stored ODS daily bars with `freq=1d`, `market`, `currency`, `adjust=none`, and source such as `polygon_grouped`, `tushare_hk`, or `yahoo_hk`
-- HK/US requests with `freq` return live Futu OpenD history rows with `source=futu_opend`; supported frequencies are `day`, `week`, `month`, `1m`, `5m`, and `60m`
+- HK/US requests with `freq` return StockPillar server-side HK/US history rows; supported frequencies are `day`, `week`, `month`, `1m`, `5m`, and `60m`
 - A-share K-line currently supports daily rows only from this route; A-share historical minute bars are not returned here as OSS URLs
 - summarize the date range, row count, latest close, interval change, high, and low
 - do not use this route for realtime quotes
